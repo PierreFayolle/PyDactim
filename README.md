@@ -1,9 +1,9 @@
 # Dactim_MRI
 
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
-[![Python 3.7](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Naereen/badges)
-[![PyPI version](https://badge.fury.io/py/dactim_mri.svg)](https://badge.fury.io/py/dactim_mri)
+[![PyPI version](https://badge.fury.io/py/dactim_mri.svg)](https://pypi.org/project/dactim-mri/)
 
 ## Description
 
@@ -19,7 +19,7 @@ It includes :
 
 ## Installation
 
-Requires at least Python 3.6 or above. Also requires [Pytorch](https://github.com/pytorch/pytorch), [Torchio](https://github.com/fepegar/torchio), [Numpy](https://github.com/numpy/numpy), [Nibabel](https://github.com/nipy/nibabel), [SimpleITK](https://github.com/SimpleITK/SimpleITK), [Matplotlib](https://github.com/matplotlib/matplotlib), [Pydicom](https://github.com/pydicom/pydicom), [Dicom2nifti](https://github.com/icometrix/dicom2nifti).
+Requires at least Python 3.7 or above. Also requires [Pytorch](https://github.com/pytorch/pytorch), [Torchio](https://github.com/fepegar/torchio), [Numpy](https://github.com/numpy/numpy), [Nibabel](https://github.com/nipy/nibabel), [SimpleITK](https://github.com/SimpleITK/SimpleITK), [Matplotlib](https://github.com/matplotlib/matplotlib), [Pydicom](https://github.com/pydicom/pydicom), [Dicom2nifti](https://github.com/icometrix/dicom2nifti).
 
 Can be quickly installed with pip :
 
