@@ -1,0 +1,10 @@
+install_requires=[
+    "torch>=1.8.1+cu101",
+    "torchio>=0.18.86",
+    "SimpleITK",
+    "numpy",
+    "nibabel",
+    "matplotlib",
+    "pydicom>=2.3.1",
+    "dicom2nifti"
+]
