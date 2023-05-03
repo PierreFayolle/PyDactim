@@ -190,7 +190,8 @@ def resample(*values, output_suffixe="resampled"):
     resample(t1_path, t2_path, swi_path, 2) => all images are resampled with 2mm voxel size
     resample(t1_path) => Not working because if there is any resample value, 2 paths are mendatory
     """
-    print(f"INFO - Starting resampling for{"\n\t".join(*values) :}")
+    nl = "\n\t"
+    print(f"INFO - Starting resampling for{nl}{nl.join(values) :}")
     paths = []
     transform = None
     for value in values:
