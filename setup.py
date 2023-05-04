@@ -1,5 +1,5 @@
 install_requires=[
-    "torch>=1.8.1",
+    "torch>=1.13.1",
     "torchio>=0.18.86",
     "SimpleITK",
     "numpy",
