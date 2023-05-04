@@ -2,18 +2,23 @@
 
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
+[![PyPI version](https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white)](https://pypi.org/project/dactim-mri/)
 [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Naereen/badges)
-[![PyPI version](https://badge.fury.io/py/dactim_mri.svg)](https://pypi.org/project/dactim-mri/)
+[![Doc](https://img.shields.io/readthedocs/dactim_mri?label=Docs&logo=Read%20the%20Docs)](https://dactim-mri.readthedocs.io/en/latest/)
+
 
 ## Description
+
+> **Warning**
+: Currently in development
 
 A MRI preprocessing tool which provides a dozen of functions easy to use made from some of the most popular Python libraries 🚀
 
 It includes :
   - Transformations : skull stripping, resampling, registration, histogram matching, bias field correction, normalization and so on
-  - Conversion : dicom to nifti, nifti to dicom
-  - Sorting : an elegant way to organize your dicoms 
-  - Anonymization : dicom can be anonymized according to hospital compliance
+  - Conversion : Dicom to Nifti, Nifti to Dicom
+  - Sorting : an elegant way to organize your Dicom files 
+  - Anonymization : Dicom files can be anonymized according to your own rules
   - Visualization : 2D and 3D light viewer
   - Spectroscopy : generation of mask of the MRS voxel/slab
 
@@ -26,4 +31,3 @@ Can be quickly installed with pip :
 ```
 pip install dactim-mri
 ```
-
