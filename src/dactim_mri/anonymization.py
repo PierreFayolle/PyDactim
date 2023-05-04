@@ -6,7 +6,7 @@ from pydicom.uid import generate_uid
 
 FILL_NUMBER = 3
 
-def createAnonymisationTable(json_path):
+def create_anonymization_table(json_path):
     """ Create a anonymization table (json).
 
     Parameters
@@ -43,7 +43,7 @@ def write(json_path, sub, patient_id):
     with open(json_path, 'w') as f:
         json.dump(data, f, indent=4)
    
-def addOrGetSub(json_path, patient_id):
+def get_sub(json_path, patient_id):
     """ Create the anonymization table if it is not existing or get the sub (unique id) of the patient.
 
     Parameters
@@ -58,14 +58,14 @@ def addOrGetSub(json_path, patient_id):
         str : the new or already existing sub (unique id) for the patient
     """
     if not os.path.exists(json_path):
-        createAnonymisationTable(json_path)
+        create_anonymization_table(json_path)
         new_sub = "sub-" + str(1).zfill(FILL_NUMBER)
         write(json_path, new_sub, patient_id)
         return new_sub
     else:
-        return getSubFromPatientID(json_path, patient_id)     
+        return get_sub_from_patient_id(json_path, patient_id)     
 
-def getSubFromPatientID(json_path, patient_id):
+def get_sub_from_patient_id(json_path, patient_id):
     """ Look for a specific patient IPP in the anonymization table. If the patient is already in the table, it returns the unique id found in bids format of the patient.
 
     Parameters

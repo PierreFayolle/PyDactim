@@ -4,7 +4,7 @@ import torchio as tio
 import nibabel as nib
 import numpy as np
 
-def skull_stripping(input_path, mask=False, force=True, output_suffixe="brain"):
+def skull_stripping(input_path, mask=False, force=True, suffix="brain"):
     """ Extract brain from a Nifti image
 
     Parameters
@@ -12,7 +12,7 @@ def skull_stripping(input_path, mask=False, force=True, output_suffixe="brain"):
     input_path : str
         Nifti file path
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
 
     mask : bool
@@ -26,7 +26,7 @@ def skull_stripping(input_path, mask=False, force=True, output_suffixe="brain"):
     os.chdir("C:/Program Files/BrainSuite19b/bin/")
     BSE = "bse.exe"
 
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     mask_path = output_path.replace(".nii.gz", "_mask.nii.gz")
 
     if os.path.exists(output_path) and not force:
@@ -47,7 +47,7 @@ def skull_stripping(input_path, mask=False, force=True, output_suffixe="brain"):
     else:
         return output_path
 
-def n4_bias_field_correction(input_path, mask=False, force=True, output_suffixe="corrected"):
+def n4_bias_field_correction(input_path, mask=False, force=True, suffix="corrected"):
     """ Correct the bias field correction
 
     Parameters
@@ -55,7 +55,7 @@ def n4_bias_field_correction(input_path, mask=False, force=True, output_suffixe=
     input_path : str
         Nifti file path
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
 
     mask_path : str
@@ -63,7 +63,7 @@ def n4_bias_field_correction(input_path, mask=False, force=True, output_suffixe=
 
     """
     print(f"INFO - Starting bias field correction for\n\t{input_path :}")
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     mask_path = output_path.replace(".nii.gz", "_mask.nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Bias field correction already done for\n\t{input_path :}")
@@ -93,7 +93,7 @@ def n4_bias_field_correction(input_path, mask=False, force=True, output_suffixe=
     else:
         return output_path
 
-def registration(atlas_path, input_path, matrix=True, force=True, output_suffixe="flirt"):
+def registration(atlas_path, input_path, matrix=True, force=True, suffix="flirt"):
     """ Register a nifti image to an atlas (MNI152)
 
     Parameters
@@ -104,11 +104,11 @@ def registration(atlas_path, input_path, matrix=True, force=True, output_suffixe
     input_path : str
         Nifti file path to be registered
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
 
     """
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     matrix_path = input_path.replace(".nii.gz", "_transfo.tfm")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Registration already done for\n\t{input_path :}\n\t{atlas_path :}")
@@ -146,8 +146,8 @@ def registration(atlas_path, input_path, matrix=True, force=True, output_suffixe
     else:
         return output_path
 
-def apply_transformation(atlas_path, input_path, matrix_path, force=True, output_suffixe="flirt"):
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+def apply_transformation(atlas_path, input_path, matrix_path, force=True, suffix="flirt"):
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Registration already done for\n\t{input_path :}\n\t{atlas_path :}")
         return output_path
@@ -165,13 +165,13 @@ def apply_transformation(atlas_path, input_path, matrix_path, force=True, output
                                 0.0,
                                 moving.GetPixelIDValue())
 
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     sitk.WriteImage(resampled, output_path)
 
     return output_path
 
-def resample(*values, output_suffixe="resampled"):
+def resample(*values, suffix="resampled"):
     """ Resample images in the same space with a resample factor. If no resample factor is given, the first image become the fixed image and all others paths will be resampled on it
 
     Parameters
@@ -214,7 +214,7 @@ def resample(*values, output_suffixe="resampled"):
 
                 for image in subject.get_images_names():
                     if image != "ref":
-                        subject[image].save(image.replace(".nii.gz", "_" + output_suffixe + ".nii.gz"))
+                        subject[image].save(image.replace(".nii.gz", "_" + suffix + ".nii.gz"))
             else:
                 raise ValueError("Need at least 2 valid paths (1 as ref, 1 as resampled) when no resampling value is given")
         else:
@@ -226,12 +226,12 @@ def resample(*values, output_suffixe="resampled"):
 
             for image in subject.get_images_names():
                 if image != "ref":
-                    subject[image].save(image.replace(".nii.gz", "_" + output_suffixe + ".nii.gz"))
+                    subject[image].save(image.replace(".nii.gz", "_" + suffix + ".nii.gz"))
 
     else:
         raise ValueError("All the given path were not valid")
 
-def histogram_matching(input_ref_path, input_path, output_suffixe="hm"):
+def histogram_matching(input_ref_path, input_path, suffix="hm"):
     """ Match the histogram of two images.
 
     Parameters
@@ -242,7 +242,7 @@ def histogram_matching(input_ref_path, input_path, output_suffixe="hm"):
     input_path : str 
         The moving image that needs to be filtered
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
     """
     print(f"INFO - Starting histogram matching for\n\t{input_ref_path :}\n\t{input_path :}")
@@ -261,13 +261,13 @@ def histogram_matching(input_ref_path, input_path, output_suffixe="hm"):
 
     writer = sitk.ImageFileWriter()
 
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     print(f"INFO - Saving generated image at\n\t{output_path :}")
 
     writer.SetFileName(output_path)
     writer.Execute(out_img)
 
-def apply_mask(input_path, mask_path, force=True, output_suffixe="mask"):
+def apply_mask(input_path, mask_path, force=True, suffix="mask"):
     """ Apply a binary mask to an image sharing the same shape.
 
     Parameters
@@ -278,10 +278,10 @@ def apply_mask(input_path, mask_path, force=True, output_suffixe="mask"):
     mask_path : str 
         The binary mask path 
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
     """
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Mask already applied for\n\t{input_path :}")
         return output_path
@@ -301,7 +301,7 @@ def apply_mask(input_path, mask_path, force=True, output_suffixe="mask"):
 
     return output_path
 
-def substract(input_ref_path, input_path, is_aligned=True, output_suffixe="sub"):
+def substract(input_ref_path, input_path, is_aligned=True, suffix="sub"):
     """ Match the histogram of two images.
 
     Parameters
@@ -315,14 +315,14 @@ def substract(input_ref_path, input_path, is_aligned=True, output_suffixe="sub")
     is_aligned : Boolean
         Boolean to check if the images are aligned. If not, it starts registration function before substraction
 
-    output_suffixe : str
+    suffix : str
         Nifti file suffixe for the new generated image
     """
     print(f"INFO - Starting substraction for\n\t{input_ref_path :}\n\t{input_path :}")
     ref = nib.load(input_ref_path)
 
     if is_aligned == False:
-        input_aligned_path = registration(input_ref_path, input_path, output_suffixe="flirt")
+        input_aligned_path = registration(input_ref_path, input_path, suffix="flirt")
         img = nib.load(input_aligned_path)
     else:
         print(f"INFO - Assuming the images are already aligned. Registration has been skipped")
@@ -334,15 +334,15 @@ def substract(input_ref_path, input_path, is_aligned=True, output_suffixe="sub")
     # ref_data = (ref.get_fdata() - ref.get_fdata().min()) / (ref.get_fdata().max() - ref.get_fdata().min())
     # sub = ref_data - img_data
 
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     print(f"INFO - Saving generated image at\n\t{output_path :}")
 
     nib.save(nib.Nifti1Image(sub, img.affine), output_path)
 
     return output_path
 
-def variance(input_path, offset=9, force=True, output_suffixe="var"):
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+def variance(input_path, offset=9, force=True, suffix="var"):
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Variance map already computed for\n\t{input_path :}")
         return output_path
@@ -363,8 +363,8 @@ def variance(input_path, offset=9, force=True, output_suffixe="var"):
     
     return output_path
 
-def normalize(input_path, force=True, output_suffixe="minmax"):
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+def normalize(input_path, force=True, suffix="minmax"):
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Normalization already computed for\n\t{input_path :}")
         return output_path
@@ -379,9 +379,9 @@ def normalize(input_path, force=True, output_suffixe="minmax"):
 
     return output_path
 
-def crop_mri(input_path, force=True, output_suffixe="cropped"):
+def crop_mri(input_path, force=True, suffix="cropped"):
     print(f"INFO - Starting automatic crop for\n\t{input_path :}")
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Automatic crop already done for\n\t{input_path :}")
         return output_path
@@ -450,9 +450,9 @@ def crop_mri(input_path, force=True, output_suffixe="cropped"):
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     return output_path, cropped_idx
 
-def apply_crop(input_path, crop, force=True, output_suffixe="cropped"):
+def apply_crop(input_path, crop, force=True, suffix="cropped"):
     print(f"INFO - Starting automatic crop for\n\t{input_path :}")
-    output_path = input_path.replace(".nii.gz", "_" + output_suffixe + ".nii.gz")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
         print(f"INFO - Automatic crop already done for\n\t{input_path :}")
         return output_path
