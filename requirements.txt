@@ -6,3 +6,4 @@ nibabel
 matplotlib
 pydicom==2.3.1
 dicom2nifti
+urllib3==1.26.13
