@@ -18,7 +18,7 @@ Dactim MRI's Documentation
       <img src="_static/Univ-logo.png" width="163px" style="margin-right: 10px">
    </div>
 
-|Windows| |PyPI pyversions| |Open In Collab| |PyPI version fury.io|
+|Windows| |PyPI pyversions| |PyPI version fury.io| |Open In Collab|
 
 .. |Windows| image:: https://svgshare.com/i/ZhY.svg
    :target: https://svgshare.com/i/ZhY.svg
@@ -26,24 +26,26 @@ Dactim MRI's Documentation
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://pypi.python.org/pypi/dactim-mri/
 
+.. |PyPI version fury.io| image:: https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white
+   :target: https://pypi.python.org/pypi/dactim-mri/
+
 .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://pypi.python.org/pypi/dactim-mri/
 
-.. |PyPI version fury.io| image:: https://badge.fury.io/py/dactim_mri.svg
-   :target: https://pypi.python.org/pypi/dactim-mri/
    
 Description
 -----------
 
 A MRI preprocessing tool which provides a dozen of functions easy to use made from some of the most popular Python libraries 🚀
 
-It includes :
-  - Transformations : skull stripping, resampling, registration, histogram matching, bias field correction, normalization and so on
-  - Conversion : dicom to nifti, nifti to dicom
-  - Sorting : an elegant way to organize your dicoms 
-  - Anonymization : dicom can be anonymized according to hospital compliance
-  - Visualization : 2D and 3D light viewer
-  - Spectroscopy : generation of mask of the MRS voxel/slab
+It includes:
+   - Transformations : skull stripping, resampling, registration, histogram matching, bias field correction, normalization and so on
+   - Conversion : Dicom to Nifti, Nifti to Dicom
+   - Sorting : an elegant way to organize your Dicom files
+   - Anonymization : Dicom files can be anonymized according to your own rules
+   - Visualization : 2D and 3D light viewer
+   - Spectroscopy : generation of mask of the MRS voxel/slab
+
 
 Installation
 ------------
@@ -57,17 +59,17 @@ Can be quickly installed with pip :
 
    pip install dactim-mri
 
-.. NOTE::
+.. .. NOTE::
 
-   Ceci est une note.
+..    Ceci est une note.
 
-.. WARNING::
+.. .. WARNING::
 
-   Ceci est un avertissement !
+..    Ceci est un avertissement !
 
-.. IMPORTANT::
+.. .. IMPORTANT::
 
-   Ceci est important !
+..    Ceci est important !
 
 Indices and tables
 ==================
