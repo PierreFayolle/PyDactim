@@ -13,6 +13,7 @@ class Data():
             temp = nib.load(self.path)
             self.affine = temp.affine
             self.header = temp.header
+            self.pixdim = self.header["pixdim"][1:4]
             self.array = temp.get_fdata()
         else:
             raise ValueError("Could not find a file that matches the following path: %s" % self.path)

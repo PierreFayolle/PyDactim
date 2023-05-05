@@ -30,7 +30,7 @@ Dactim MRI's Documentation
    :target: https://pypi.python.org/pypi/dactim-mri/
 
 .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://pypi.python.org/pypi/dactim-mri/
+   :target: https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb
 
    
 Description
@@ -58,18 +58,6 @@ Can be quickly installed with pip :
 .. code-block:: python
 
    pip install dactim-mri
-
-.. .. NOTE::
-
-..    Ceci est une note.
-
-.. .. WARNING::
-
-..    Ceci est un avertissement !
-
-.. .. IMPORTANT::
-
-..    Ceci est important !
 
 Indices and tables
 ==================

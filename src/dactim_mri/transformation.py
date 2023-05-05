@@ -498,11 +498,10 @@ def copy_affine(input_ref_path, input_path, force=True, suffix="aff"):
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     return output_path
 
-if __name__ == "__main__":
-
+# if __name__ == "__main__":
+# 
     # substract(r"E:\BraTS2021\BraTS2021_00147\BraTS2021_00147_t1ce.nii.gz", r"E:\BraTS2021\BraTS2021_00147\BraTS2021_00147_t1.nii.gz")
     # registration(r"D:\Results\TEST\derivative\sub-006\ses-01\anat\sub-006_ses-01_FLAIR_brain.nii.gz", r"D:\Results\TEST\derivative\sub-006\ses-02\anat\sub-006_ses-02_FLAIR_brain.nii.gz")
     # resample(r"D:\Results\TEST\derivative\sub-006\ses-01\anat\sub-006_ses-01_FLAIR_brain.nii.gz", r"D:\Results\TEST\derivative\sub-006\ses-02\anat\sub-006_ses-02_FLAIR_brain_flirt.nii.gz", 1)
     # histogram_matching(r"D:\Results\TEST\derivative\sub-006\ses-01\anat\sub-006_ses-01_FLAIR_brain_resampled.nii.gz", r"D:\Results\TEST\derivative\sub-006\ses-02\anat\sub-006_ses-02_FLAIR_brain_flirt_resampled.nii.gz")
-
-    _, __ = n4_bias_field_correction("tests/data/t1w.nii.gz", mask=True, force=True)
+    # _, __ = n4_bias_field_correction("tests/data/t1w.nii.gz", mask=True, force=True)
