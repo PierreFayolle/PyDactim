@@ -7,3 +7,4 @@ matplotlib
 pydicom==2.3.1
 dicom2nifti
 urllib3==1.26.13
+itk-elastix==0.17.1
