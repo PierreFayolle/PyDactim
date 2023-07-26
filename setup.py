@@ -1,10 +1,12 @@
-from sphinx.setup_command import BuildDoc
-cmdclass = {'build_sphinx': BuildDoc}
+# from sphinx.setup_command import BuildDoc
+# cmdclass = {'build_sphinx': BuildDoc}
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
-setup(name='Dactim_MRI',
+setup(name='pydactim',
       python_requires='>=3.7',
+      version='0.0.11',
+      packages=find_packages(),
       install_requires=[
         "torch>=1.13.1",
         "torchio>=0.18.86",
@@ -14,17 +16,20 @@ setup(name='Dactim_MRI',
         "matplotlib",
         "pydicom>=2.3.1",
         "dicom2nifti",
-        "itk-elastix==0.17.1"
+        "itk-elastix==0.17.1",
+        "dipy>=1.7.0",
+        "scikit-image",
+        "numba"
       ],
       classifiers=[
           'Intended Audience :: Science/Research',
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
-          'Operating System :: Windows :: Windows 10'
+          'Operating System :: Microsoft :: Windows :: Windows 10'
       ],
       command_options={
         'build_sphinx': {
-            'project': ('setup.py', 'Dactim_MRI'),
+            'project': ('setup.py', 'pydactim'),
             'source_dir': ('setup.py', 'docs')
         }
       }
