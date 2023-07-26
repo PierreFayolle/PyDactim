@@ -1,8 +1,8 @@
 # PyDactim
 
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
-[![PyPI version](https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white)](https://pypi.org/project/pydactim/)
-[![Doc](https://img.shields.io/readthedocs/dactim_mri?label=Docs&logo=Read%20the%20Docs)](https://dactim-mri.readthedocs.io/en/latest/)
+[![PyPI version](https://img.shields.io/pypi/v/pydactim?label=PyPI%20version&logo=python&logoColor=white)](https://pypi.org/project/pydactim/)
+[![Doc](https://img.shields.io/readthedocs/pydactim?label=Docs&logo=Read%20the%20Docs)](https://dactim-mri.readthedocs.io/en/latest/)
 <!-- [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb) -->
 
 
