@@ -42,7 +42,7 @@ def sort_dicom(dicom_dir, output_dir="", anonymize=False):
         examen_date = str(ds.StudyDate)
 
         # on va créer le dossier protocol dans sorted_data
-        protocol_dir = os.path.join(dicom_dir, examen_study_description)
+        protocol_dir = os.path.join(output_dir, examen_study_description)
         if not os.path.exists(protocol_dir):
             os.makedirs(protocol_dir)
 
@@ -62,6 +62,6 @@ def sort_dicom(dicom_dir, output_dir="", anonymize=False):
             os.makedirs(sequence_dir)
             print("New path created :", sequence_dir)
 
-        shutil.move(dicom_path, sequence_dir)
+        shutil.copy(dicom_path, sequence_dir)
         
         

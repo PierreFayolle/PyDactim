@@ -5,10 +5,9 @@ from setuptools import setup, find_packages
 
 setup(name='pydactim',
       python_requires='>=3.7',
-      version='0.0.11',
+      version='0.0.25',
       packages=find_packages(),
       install_requires=[
-        "torch>=1.13.1",
         "torchio>=0.18.86",
         "SimpleITK",
         "numpy",
@@ -19,7 +18,9 @@ setup(name='pydactim',
         "itk-elastix==0.17.1",
         "dipy>=1.7.0",
         "scikit-image",
-        "numba"
+        "numba",
+        "pyside6",
+        "pyqtgraph",
       ],
       classifiers=[
           'Intended Audience :: Science/Research',

@@ -13,10 +13,17 @@ from .transformation import (
     copy_affine,
     skull_stripping,
     remove_small_object,
-    tissue_classifier
+    tissue_classifier,
+    add_tissue_class,
+    prediction_glioma,
+    uncertainty_prediction_glioma,
+    extract_dim
 )
+from .sorting import sort_dicom
+from .conversion import convert_dicom_to_nifti
 from .visualization import plot, plot_histo
 from .data import MRIData
 from .computation import calc_volume
 from .utils import load_dicom, timed, is_native
 from .preprocessing import preproc, init
+from .viewer.main import ViewerApp

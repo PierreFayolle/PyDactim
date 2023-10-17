@@ -13,7 +13,18 @@ def plot_histo(input_path):
     image_flat = mri_image.flatten()
 
     # Plot the histogram
-    plt.hist(image_flat, bins=256, range=(1, np.amax(mri_image)), alpha=0.75)
+    plt.hist(image_flat, bins=256, alpha=0.75)
+    plt.xlabel('Intensity')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of MRI Image')
+    plt.show()
+
+def a_plot_histo(intput_data):
+    # Flatten the 3D array to a 1D array
+    image_flat = intput_data.flatten()
+
+    # Plot the histogram
+    plt.hist(image_flat, bins=256, range=(1, np.amax(intput_data)), alpha=0.75)
     plt.xlabel('Intensity')
     plt.ylabel('Frequency')
     plt.title('Histogram of MRI Image')

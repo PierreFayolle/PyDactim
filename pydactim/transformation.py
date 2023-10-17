@@ -9,6 +9,8 @@ from .brain_extraction import run_hd_bet
 from dipy.segment.tissue import TissueClassifierHMRF
 import itk
 from numba import jit
+import torchio as tio
+import torch
 
 def n4_bias_field_correction(input_path, mask=False, force=True, suffix="corrected"):
     """ Correct the bias field correction.
@@ -651,3 +653,214 @@ def tissue_classifier(input_path, pve=True, force=True, suffix="fast"):
         return output_path, pve_path
     else:
         return output_path
+
+def add_tissue_class(input_path, mask_path, num_class, force=True, suffix="masked"):
+    print(f"INFO - Starting to add a new class for\n\t{input_path :}")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
+    if os.path.exists(output_path) and not force:
+        print(f"INFO - New added class already done for\n\t{input_path :}")
+        return output_path
+    
+    img = nib.load(input_path)
+    img_data = img.get_fdata()
+
+    mask = nib.load(mask_path)
+    mask_data = mask.get_fdata()
+
+    img_data[mask_data > 0] = num_class
+
+    nib.save(nib.Nifti1Image(img_data, img.affine), output_path)
+    print(f"INFO - Saving generated image at\n\t{output_path :}")
+    return output_path
+
+def extract_dim(input_path, dim, force=True, suffix=""):
+    print(f"INFO - Starting to extract the dimension {dim} for\n\t{input_path :}")
+    output_path = input_path.replace(".nii.gz", "_dim" + str(dim) + ".nii.gz")
+    if os.path.exists(output_path) and not force:
+        print(f"INFO - Extracted dimension already done for\n\t{input_path :}")
+        return output_path
+    
+    img = nib.load(input_path)
+    img_data = img.get_fdata()
+
+    img_data = img_data[..., dim]
+ 
+    nib.save(nib.Nifti1Image(img_data, img.affine), output_path)
+    print(f"INFO - Saving generated image at\n\t{output_path :}")
+    return output_path
+
+def prediction_glioma(input_path, model_path, force=True, suffix="predicted"):
+    print(f"INFO - Starting glioma prediction for\n\t{input_path :}")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
+    if os.path.exists(output_path) and not force:
+        print(f"INFO - Glioma segmentation already done for\n\t{input_path :}")
+        return output_path
+    
+    from monai.inferers import sliding_window_inference
+    from monai.networks.nets import UNETR
+    model = UNETR(
+            in_channels=1,
+            out_channels=2,
+            img_size=(176, 208, 160),
+            feature_size=16,
+            hidden_size=768,
+            mlp_dim=3072,
+            num_heads=12,
+            pos_embed="perceptron",
+            norm_name="instance",
+            res_block=True,
+            dropout_rate=0.2,
+    ).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    transform = tio.Compose([
+            tio.ToCanonical(),
+            tio.Resample(1),
+            tio.CropOrPad((176, 208, 160)),
+            tio.HistogramStandardization({"image": np.load("E:/Leo/script/results/landmarks.npy")}),
+            tio.ZNormalization(masking_method=tio.ZNormalization.mean),
+    ])
+
+    ds = tio.SubjectsDataset([
+        tio.Subject(image = tio.ScalarImage(input_path))], 
+        transform=transform
+    )[0]
+
+    affine = nib.load(input_path).affine
+    with torch.no_grad():
+        img = ds["image"]["data"]
+        val_inputs = torch.unsqueeze(img, 1)
+        val_outputs = sliding_window_inference(val_inputs.cuda(), (176, 208, 160), 4, model, overlap=0.25)
+        val_outputs = torch.argmax(val_outputs, dim=1).detach().cpu().numpy()[0].astype(float)
+        pred_map = tio.LabelMap(tensor=np.expand_dims(val_outputs, 0), affine=ds.image.affine)
+        ds.add_image(pred_map, "pred")
+        ds_inv = ds.apply_inverse_transform(warn=True)
+        val_outputs = ds_inv["pred"].data.numpy().squeeze()
+
+        nib.save(nib.Nifti1Image(val_outputs.squeeze(), affine), output_path)
+    
+    output_path = remove_small_object(output_path, 5000, force=True)
+    print(f"INFO - Saving generated image at\n\t{output_path :}")
+    return output_path
+
+def uncertainty_prediction_glioma(input_path, model_path, force=True, suffix="uncertainty"):
+    print(f"INFO - Starting glioma uncertainty prediction for\n\t{input_path :}")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
+    if os.path.exists(output_path) and not force:
+        print(f"INFO - Uncertainty glioma segmentation already done for\n\t{input_path :}")
+        return output_path
+    
+    from monai.inferers import sliding_window_inference
+    from monai.networks.nets import UNETR
+    from tqdm.auto import tqdm, trange
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = UNETR(
+            in_channels=1,
+            out_channels=2,
+            img_size=(176, 208, 160),
+            feature_size=16,
+            hidden_size=768,
+            mlp_dim=3072,
+            num_heads=12,
+            pos_embed="perceptron",
+            norm_name="instance",
+            res_block=True,
+            dropout_rate=0.2,
+    ).to(device)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    transform = tio.Compose([
+            tio.ToCanonical(),
+            tio.Resample(1),
+            tio.CropOrPad((176, 208, 160)),
+            tio.HistogramStandardization({"image": np.load("E:/Leo/script/results/landmarks.npy")}),
+            tio.ZNormalization(masking_method=tio.ZNormalization.mean),
+            tio.RandomFlip(),
+            tio.RandomAffine(p=0.5),
+    ])
+
+    subject = tio.Subject(image = tio.ScalarImage(input_path)) 
+    affine = nib.load(input_path).affine
+
+    results = []
+    for _ in trange(20):
+        subject = transform(subject)
+        inputs = subject.image.data.to(device)
+        
+        with torch.no_grad():
+            inputs = torch.unsqueeze(inputs, 1)
+            outputs = sliding_window_inference(inputs, (176, 208, 160), 4, model, overlap=0.25)
+        outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()[0].astype(float)
+        pred_map = tio.LabelMap(tensor=np.expand_dims(outputs, 0), affine=subject.image.affine)
+        subject.add_image(pred_map, "pred")
+        subject_inv = subject.apply_inverse_transform(warn=True)
+        results.append(subject_inv["pred"].data)
+
+    result = torch.stack(results).long()
+    tta_result_tensor = result.mode(dim=0).values
+
+    different = torch.stack([
+        tensor != tta_result_tensor
+        for tensor in results
+    ])
+    uncertainty = different.float().mean(dim=0)
+    uncertainty_img = tio.ScalarImage(tensor=uncertainty, affine=subject.image.affine)
+    subject.add_image(uncertainty_img, "uncertainty")
+
+    uncertainty_img = uncertainty_img.data.numpy().squeeze()
+    nib.save(nib.Nifti1Image(uncertainty_img, affine), output_path)
+
+    print(f"INFO - Saving generated image at\n\t{output_path :}")
+    return output_path
+
+    print(f"INFO - Starting glioma prediction for\n\t{input_path :}")
+    
+    from monai.inferers import sliding_window_inference
+    from monai.networks.nets import UNETR
+    model = UNETR(
+            in_channels=1,
+            out_channels=2,
+            img_size=(176, 208, 160),
+            feature_size=16,
+            hidden_size=768,
+            mlp_dim=3072,
+            num_heads=12,
+            pos_embed="perceptron",
+            norm_name="instance",
+            res_block=True,
+            dropout_rate=0.2,
+    ).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    transform = tio.Compose([
+            tio.ToCanonical(),
+            tio.Resample(1),
+            tio.CopyAffine('image'),
+            tio.CropOrPad((176, 208, 160)),
+            tio.ZNormalization(masking_method=tio.ZNormalization.mean),
+    ])
+
+    ds = tio.SubjectsDataset([
+        tio.Subject(image = tio.ScalarImage(input_path))], 
+        transform=transform
+    )[0]
+
+    affine = nib.load(input_path).affine
+    with torch.no_grad():
+        img = ds["image"]["data"]
+        val_inputs = torch.unsqueeze(img, 1)
+        val_outputs = sliding_window_inference(val_inputs.cuda(), (176, 208, 160), 4, model, overlap=0.25)
+
+        pred_map = tio.LabelMap(tensor=val_outputs[0], affine=ds.image.affine)
+        ds.add_image(pred_map, "pred")
+        val_outputs = ds.apply_inverse_transform(warn=True).pred.data
+
+        val_outputs = torch.argmax(val_outputs, dim=1).detach().cpu().numpy()[0].astype(float)
+        val_outputs_path = input_path.replace(".nii", "_predicted_unetr.nii")
+        nib.save(nib.Nifti1Image(val_outputs, affine), val_outputs_path)
+    
+    print(f"INFO - Saving generated image at\n\t{val_outputs_path :}")
+    return val_outputs_path

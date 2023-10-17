@@ -11,7 +11,7 @@ def calc_volume(mask_path):
 
     """
     mask = nib.load(mask_path)
-    pixdim = mask.affine["pixdim"][1:4]
+    pixdim = mask.header["pixdim"][1:4]
     volume = np.count_nonzero(mask.get_fdata())
     volumetrie = volume * pixdim[0] * pixdim[1] * pixdim[2]
     print("Volume :", round(volumetrie, 3), "cm3")
