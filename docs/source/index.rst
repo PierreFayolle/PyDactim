@@ -20,9 +20,6 @@ PyDactim Documentation
 
 |Windows| |PyPI pyversions| |PyPI version fury.io| |Open In Collab|
 
-.. |Windows| image:: https://svgshare.com/i/ZhY.svg
-   :target: https://svgshare.com/i/ZhY.svg
-
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://pypi.python.org/pypi/dactim-mri/
 
