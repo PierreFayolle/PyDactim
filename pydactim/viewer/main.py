@@ -3,13 +3,14 @@ import os
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
-from PySide6.QtWidgets import QApplication, QPushButton, QSlider, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QWidget, QFileDialog, QMenu
+from PySide6.QtWidgets import QHeaderView, QApplication, QPushButton, QSlider, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QFileDialog, QMenu
 from PySide6.QtGui import QImage, QPixmap, QAction, QGuiApplication, QIcon
 from PySide6.QtCore import Qt, QEvent, QRect, QSize
 import pyqtgraph as pg
 import matplotlib.pyplot as plt
 import glob
 from io import StringIO
+import imageio
 
 from pydactim.transformation import (n4_bias_field_correction,
     registration, apply_transformation, resample, histogram_matching, 
@@ -17,10 +18,10 @@ from pydactim.transformation import (n4_bias_field_correction,
     remove_small_object, tissue_classifier, add_tissue_class, prediction_glioma, uncertainty_prediction_glioma)
 from pydactim.sorting import sort_dicom
 from pydactim.conversion import convert_dicom_to_nifti
-from pydactim.viewer.custom import CustomLabel, ThumbnailFrame, ScrollArea, ComboBox, AnimatedToggle
-from pydactim.viewer.view_panel import ViewPanel
-from pydactim.viewer.utils import create_thumbnail, get_darkModePalette, reset_layout
-from pydactim.viewer.settings import *
+from custom import ThumbnailFrame, ScrollArea, ComboBox, AnimatedToggle
+from view_panel import ViewPanel
+from utils import create_thumbnail, get_darkModePalette, reset_layout
+from settings import *
 
 class NiftiViewer(QMainWindow):
     def __init__(self):
@@ -31,7 +32,7 @@ class NiftiViewer(QMainWindow):
         # self.nifti_found = glob.glob('./**/*.nii.gz', recursive=True)
         self.init_tabs()
         # self.init_all()
-        # self.open_volume()
+        self.open_volume()
         self.dynamic_windows = []
 
     def init_all(self):
@@ -48,7 +49,7 @@ class NiftiViewer(QMainWindow):
         self.overlay = False
         self.overlay_path = None
 
-        sys.stdout = CustomOutputStream(self.log_label, self.log_scroll)
+        # sys.stdout = CustomOutputStream(self.log_label, self.log_scroll)
 
     def init_tabs(self):
         print("INFO - Creating menu tab")
@@ -71,6 +72,10 @@ class NiftiViewer(QMainWindow):
 
         action = QAction("Screenshot", self)
         action.triggered.connect(self.screenshot)
+        file_menu.addAction(action)
+
+        action = QAction("Gif", self)
+        action.triggered.connect(self.gifshot)
         file_menu.addAction(action)
 
         action = QAction("Sort DICOM directory", self)
@@ -132,6 +137,10 @@ class NiftiViewer(QMainWindow):
         action.triggered.connect(lambda x: self.transforms("Apply mask"))
         transform_menu.addAction(action)
 
+        action = QAction("Bias field correction", self)
+        action.triggered.connect(lambda x: self.transforms("Bias field correction"))
+        transform_menu.addAction(action)
+
         action = QAction("Resample voxels", self)
         action.triggered.connect(lambda x: self.transforms("Resample voxels"))
         transform_menu.addAction(action)
@@ -142,6 +151,10 @@ class NiftiViewer(QMainWindow):
 
         action = QAction("Registration", self)
         action.triggered.connect(lambda x: self.transforms("Registration"))
+        transform_menu.addAction(action)
+
+        action = QAction("Apply transformation", self)
+        action.triggered.connect(lambda x: self.transforms("Apply transformation"))
         transform_menu.addAction(action)
 
         action = QAction("Susan", self)
@@ -202,7 +215,7 @@ class NiftiViewer(QMainWindow):
         self.lut_layout = QVBoxLayout()
         self.lut_label = QLabel("Look-up-table")
         self.lut_button = ComboBox()
-        self.lut_button.addItems(['Grayscale', 'Red', 'Green', 'Blue', 'Rainbow', 'Spectral', 'Viridis', 'Qualitative'])
+        self.lut_button.addItems(['Grayscale', 'Red', 'Green', 'Blue', 'Rainbow', 'Spectral', 'Flow', 'Viridis', 'Qualitative', 'Random'])
         self.lut_button.currentTextChanged.connect(self.change_lut)
         self.lut_layout.addWidget(self.lut_label)
         self.lut_layout.addWidget(self.lut_button)
@@ -234,9 +247,61 @@ class NiftiViewer(QMainWindow):
         self.perf_layout = QVBoxLayout()
         self.plot_aif = pg.PlotWidget()
         self.plot_aif.getPlotItem().hideAxis('left')
+
+        self.roi_widget = QWidget()
+        self.roi_layout = QHBoxLayout()
+
+        self.roi_x_widget = QWidget()
+        self.roi_x_layout = QHBoxLayout()
+        self.roi_x_title = QLabel("ROI x")
+        self.roi_x = QLineEdit()
+        self.roi_x.setFixedWidth(50)
+        self.roi_x_layout.addWidget(self.roi_x_title)
+        self.roi_x_layout.addWidget(self.roi_x)
+        self.roi_x_layout.setAlignment(Qt.AlignLeft)
+        self.roi_x_widget.setLayout(self.roi_x_layout)
+
+        self.roi_y_widget = QWidget()
+        self.roi_y_layout = QHBoxLayout()
+        self.roi_y_title = QLabel("ROI y")
+        self.roi_y = QLineEdit()
+        self.roi_y.setFixedWidth(50)
+        self.roi_y_layout.addWidget(self.roi_y_title)
+        self.roi_y_layout.addWidget(self.roi_y)
+        self.roi_y_layout.setAlignment(Qt.AlignLeft)
+        self.roi_y_widget.setLayout(self.roi_y_layout)
+
+        self.roi_z_widget = QWidget()
+        self.roi_z_layout = QHBoxLayout()
+        self.roi_z_title = QLabel("ROI z")
+        self.roi_z = QLineEdit()
+        self.roi_z.setFixedWidth(50)
+        self.roi_z_layout.addWidget(self.roi_z_title)
+        self.roi_z_layout.addWidget(self.roi_z)
+        self.roi_z_layout.setAlignment(Qt.AlignLeft)
+        self.roi_z_widget.setLayout(self.roi_z_layout)
+
+        self.roi_table = QTableWidget()
+        roi_header = ["Mean", "Std", "Min", "Max", "mm3"]
+        self.roi_table.setColumnCount(len(roi_header))
+        self.roi_table.setHorizontalHeaderLabels(roi_header)
+        self.roi_table.setRowCount(1)
+        self.roi_table.verticalHeader().setVisible(False)
+        _ = [self.roi_table.setColumnWidth(i,70) for i in range(len(roi_header))]
+        self.roi_table.horizontalHeader().setStretchLastSection(True)
+
+
+        self.roi_layout.addWidget(self.roi_x_widget)
+        self.roi_layout.addWidget(self.roi_y_widget)
+        self.roi_layout.addWidget(self.roi_z_widget)
+        self.roi_widget.setLayout(self.roi_layout)
+
         self.perf_layout.addWidget(self.plot_aif)
+        self.perf_layout.addWidget(self.roi_widget)
+        self.perf_layout.addWidget(self.roi_table)
         self.perf_widget.setLayout(self.perf_layout)
 
+        # RIGHT LAYOUT
         self.right_layout = QVBoxLayout()
         self.right_layout.addWidget(self.icon_widget)
         self.right_layout.addWidget(self.info_widget)
@@ -249,7 +314,7 @@ class NiftiViewer(QMainWindow):
 
         print("INFO - Creating middle panel")
         # View label that contains the image label(s)
-        self.view_widget = ViewPanel(self.filename, self.update_text, self.plot_aif)
+        self.view_widget = ViewPanel(self.filename, self.update_text, self.plot_aif, self.update_roi)
         self.view_widget.update_text()
 
         print("INFO - Creating main layout")
@@ -323,7 +388,7 @@ class NiftiViewer(QMainWindow):
     def open_volume(self):
         self.dirname = QFileDialog.getExistingDirectory(self, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
         # self.dirname = "D:/Studies/GLIOBIOPSY/data/sub-018/"
-        self.nifti_found = glob.glob(os.path.join(self.dirname, '**/*.nii.gz'), recursive=True)
+        self.nifti_found = glob.glob(os.path.join(self.dirname, '**/*.nii*'), recursive=True)
         self.init_all()
 
     def add_file(self):
@@ -427,7 +492,7 @@ class NiftiViewer(QMainWindow):
         self.overlay_lut_layout = QVBoxLayout()
         self.overlay_lut_label = QLabel("Look-up-table")
         self.overlay_lut_button = ComboBox()
-        self.overlay_lut_button.addItems(['Grayscale', 'Red', 'Green', 'Blue', 'Rainbow', 'Spectral', 'Viridis', 'Qualitative'])
+        self.overlay_lut_button.addItems(['Grayscale', 'Red', 'Green', 'Blue', 'Rainbow', 'Spectral', 'Flow', 'Viridis', 'Qualitative', 'Random'])
         self.overlay_lut_button.currentTextChanged.connect(self.change_overlay_lut)
         self.overlay_lut_layout.addWidget(self.overlay_lut_label)
         self.overlay_lut_layout.addWidget(self.overlay_lut_button)
@@ -455,11 +520,11 @@ class NiftiViewer(QMainWindow):
         self.view_widget.change_overlay_lut(lut)
 
     def toggle_overlay_visibility(self):
-        self.view_widget.layout.itemAt(0).widget().overlay = not self.view_widget.layout.itemAt(0).widget().overlay
+        self.view_widget.layout.itemAt(0).widget().overlay_toggle = not self.view_widget.layout.itemAt(0).widget().overlay_toggle
         self.view_widget.layout.itemAt(0).widget().update_image()
         if self.view_widget.state == "3D":
-            self.view_widget.layout.itemAt(1).widget().overlay = not self.view_widget.layout.itemAt(1).widget().overlay
-            self.view_widget.layout.itemAt(2).widget().overlay = not self.view_widget.layout.itemAt(2).widget().overlay
+            self.view_widget.layout.itemAt(1).widget().overlay_toggle = not self.view_widget.layout.itemAt(1).widget().overlay_toggle
+            self.view_widget.layout.itemAt(2).widget().overlay_toggle = not self.view_widget.layout.itemAt(2).widget().overlay_toggle
             self.view_widget.layout.itemAt(1).widget().update_image()
             self.view_widget.layout.itemAt(2).widget().update_image()
 
@@ -475,6 +540,7 @@ class NiftiViewer(QMainWindow):
             for i in reversed(range(self.view_widget.layout.count())):
                 label = self.view_widget.layout.itemAt(i).widget()
                 label.overlay = False
+                label.overlay_toggle = False
                 label.overlay_data = None
                 label.update_image()
 
@@ -502,6 +568,35 @@ class NiftiViewer(QMainWindow):
             screenshot.save(file_path, "png")
             print("Screenshot saved to:", file_path)
         
+    def gifshot(self):
+        gif_array = []
+        current_slice = self.view_widget.a_slice
+        self.view_widget.axial_label.data = self.view_widget.adata[..., self.view_widget.a_slice]
+        for slice in range(self.view_widget.shape[2]):
+            print(slice)
+            self.view_widget.update_slice(slice, "Axial")
+            self.view_widget.axial_label.update_image()
+
+            pixmap = self.view_widget.axial_label.pixmap
+
+            # Convert the pixmap to a QImage
+            image = pixmap.toImage()
+
+            # Convert the QImage to a NumPy array
+            width = image.width()
+            height = image.height()
+            buffer = image.constBits()
+            dtype = np.uint8 if image.format() == QImage.Format.Format_RGB32 else np.uint32
+            array = np.array(buffer).reshape(height, width, 4).astype(dtype)
+
+            array = array[:, :, [2, 1, 0, 3]]
+            gif_array.append(array)  # Extract RGB channels
+
+        print("INFO - Making the gif file...")
+        imageio.mimsave(f'{self.dirname}/animation.gif', gif_array, duration=0.375/(len(gif_array)/10))
+        self.view_widget.update_slice(current_slice, "Axial")
+        self.view_widget.axial_label.update_image()
+ 
     def whole_histogram(self):
         # Flatten the 3D array to a 1D array
         image_flat = self.rotated_data.flatten()
@@ -580,6 +675,17 @@ class NiftiViewer(QMainWindow):
                     info += f"Slice: {image_label.slice_index+1}<br>"
                     info += f"Window width: {int(image_label.window_width)}<br>Window center: {int(image_label.window_center)}"
         self.text_label.setText(f"{title}{info}")
+        self.roi_z.setText(f"{self.view_widget.a_slice}")
+
+    def update_roi(self, x, y, z, mean, std, min, max, mm3):
+        self.roi_x.setText(str(int(x)))
+        self.roi_y.setText(str(int(y)))
+        self.roi_z.setText(str(int(z)))
+        self.roi_table.setItem(0, 0, QTableWidgetItem(str(round(mean,3))))
+        self.roi_table.setItem(0, 1, QTableWidgetItem(str(round(std,3))))
+        self.roi_table.setItem(0, 2, QTableWidgetItem(str(round(min,3))))
+        self.roi_table.setItem(0, 3, QTableWidgetItem(str(round(max,3))))
+        self.roi_table.setItem(0, 4, QTableWidgetItem(str(round(mm3,3))))
 
     def reset_contrast(self):
         for i in reversed(range(self.view_widget.layout.count())):
@@ -594,7 +700,6 @@ class NiftiViewer(QMainWindow):
         self.dynamic_windows.append(new_window)
 
     def run_transform(self, *args):
-        print(args)
         if args[0] == "Sort DICOM":
             sort_dicom(args[1], args[2], anonymize=False)
         elif args[0] == "Convert DICOM":
@@ -607,7 +712,6 @@ class NiftiViewer(QMainWindow):
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
         elif args[0] == "Apply crop":
             idx = [int(val) for val in args[2].split(",")]
-            print(idx)
             new_path = apply_crop(args[1], crop=idx, force=args[3])
             if new_path not in self.nifti_found:
                 self.load_sequence(new_path)
@@ -640,6 +744,12 @@ class NiftiViewer(QMainWindow):
                 self.load_sequence(new_path)
                 self.nifti_found.append(new_path)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+        elif args[0] == "Apply transformation":
+            new_path = apply_transformation(args[1], args[2], args[3], force=args[3])
+            if new_path not in self.nifti_found:
+                self.load_sequence(new_path)
+                self.nifti_found.append(new_path)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
         elif args[0] == "Apply mask":
             new_path = apply_mask(args[1], args[2], force=args[3])
             if new_path not in self.nifti_found:
@@ -652,6 +762,20 @@ class NiftiViewer(QMainWindow):
                 new_path, new_path2 = skull_stripping(args[1], model_path=args[2], mask=args[3], force=args[4])
             else:
                 new_path = skull_stripping(args[1], model_path=args[2], mask=args[3], force=args[4])
+            if new_path not in self.nifti_found:
+                self.load_sequence(new_path)
+                self.nifti_found.append(new_path)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+            if new_path2 is not None and new_path2 not in self.nifti_found:
+                self.load_sequence(new_path2)
+                self.nifti_found.append(new_path2)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+        elif args[0] == "Bias field correction":
+            new_path2 = None
+            if args[3] is True:
+                new_path, new_path2 = n4_bias_field_correction(args[1], mask=args[2], force=args[4])
+            else:
+                new_path = n4_bias_field_correction(args[1], force=args[2])
             if new_path not in self.nifti_found:
                 self.load_sequence(new_path)
                 self.nifti_found.append(new_path)
@@ -679,6 +803,7 @@ class TransformsGUI(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
+        self.path = path
         self.run_transform = run_transform
 
         if transform == "Sort DICOM":
@@ -724,7 +849,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Auto crop":
-            title = QLabel("Path for auto crop")
+            title = QLabel("Path for the image to auto crop")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -739,7 +864,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
         
         elif transform == "Apply crop":
-            title = QLabel("Path for applied crop")
+            title = QLabel("Path for for the image to apply crop")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -760,7 +885,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Resample voxels":
-            title = QLabel("Path for resample")
+            title = QLabel("Path for image the to resample")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -778,7 +903,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Dilate":
-            title = QLabel("Path for dilate")
+            title = QLabel("Path for the image to dilate")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -798,7 +923,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Susan":
-            title = QLabel("Path for susan")
+            title = QLabel("Path for the image to susan")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -819,7 +944,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Skull stripping":
-            title = QLabel("Path for skull strip")
+            title = QLabel("Path for the image to skull strip")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -828,11 +953,11 @@ class TransformsGUI(QWidget):
 
             title = QLabel("Model path")
             dialog = QPushButton("Browse")
-            dialog.clicked.connect(self.get_model_dir)
-            self.model = QLineEdit(self)
+            dialog.clicked.connect(self.get_extra_dir)
+            self.extra = QLineEdit(self)
             
             layout.addWidget(title)
-            layout.addWidget(self.model)
+            layout.addWidget(self.extra)
             layout.addWidget(dialog)
 
             mask = QCheckBox("Mask")
@@ -842,7 +967,7 @@ class TransformsGUI(QWidget):
             layout.addWidget(force)
 
             button = QPushButton("Run Function", self)
-            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.model.text(), mask.isChecked(), force.isChecked()))
+            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.extra.text(), mask.isChecked(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         elif transform == "Registration":
@@ -870,6 +995,37 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), combo_box_2.currentText(), mat.isChecked(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
+        elif transform == "Apply transformation":
+            title = QLabel("Path for fixed image")
+            combo_box = QComboBox(self)
+            combo_box.addItems(path)
+            combo_box.setCurrentText(selected_path)
+            layout.addWidget(title)
+            layout.addWidget(combo_box)
+
+            title = QLabel("Path for moving image")
+            combo_box_2 = QComboBox(self)
+            combo_box_2.addItems(path)
+            combo_box_2.setCurrentText(selected_path)
+            layout.addWidget(title)
+            layout.addWidget(combo_box_2)
+
+            title = QLabel("Matrix path")
+            dialog = QPushButton("Browse")
+            dialog.clicked.connect(self.get_extra_file)
+            self.extra = QLineEdit(self)
+            
+            layout.addWidget(title)
+            layout.addWidget(self.extra)
+            layout.addWidget(dialog)
+
+            force = QCheckBox("Force")
+            layout.addWidget(force)
+
+            button = QPushButton("Run Function", self)
+            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), combo_box_2.currentText(), self.extra.text(), force.isChecked()))
+            layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
         elif transform == "Apply mask":
             title = QLabel("Path for the image to be masked")
             combo_box = QComboBox(self)
@@ -892,13 +1048,40 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), combo_box_2.currentText(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
+        elif transform == "Bias field correction":
+            title = QLabel("Path for the image to correct")
+            combo_box = QComboBox(self)
+            combo_box.addItems(path)
+            combo_box.setCurrentText(selected_path)
+            layout.addWidget(title)
+            layout.addWidget(combo_box)
+
+            mask = QCheckBox("Mask")
+            layout.addWidget(mask)
+
+            force = QCheckBox("Force")
+            layout.addWidget(force)
+
+            button = QPushButton("Run Function", self)
+            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), mask.isChecked(), force.isChecked()))
+            layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
         self.setWindowTitle("PyDactim Transformation")
         self.show_centered()
 
-    def get_model_dir(self):
+    def get_extra_dir(self):
         dialog = QFileDialog()
         dir = dialog.getExistingDirectory(None, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
-        self.model.setText(dir)
+        self.extra.setText(dir)
+
+    def get_extra_file(self):
+        file = QFileDialog.getOpenFileName(
+            self,
+            "Open File",
+            os.path.dirname(self.path[0]),
+            "Matrix files (*.tfm);;",
+        )[0]
+        self.extra.setText(file)
 
     def get_input_dir(self):
         dialog = QFileDialog()

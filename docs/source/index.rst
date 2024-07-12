@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Dactim MRI's Documentation
+PyDactim Documentation
 ======================================
 .. toctree::
    :maxdepth: 2
@@ -29,8 +29,8 @@ Dactim MRI's Documentation
 .. |PyPI version fury.io| image:: https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white
    :target: https://pypi.python.org/pypi/dactim-mri/
 
-.. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb
+.. .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
+..    :target: https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb
 
    
 Description
@@ -57,7 +57,7 @@ Can be quickly installed with pip :
 
 .. code-block:: python
 
-   pip install dactim-mri
+   pip install pydactim
 
 Indices and tables
 ==================

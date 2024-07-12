@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(name='pydactim',
       python_requires='>=3.7',
-      version='0.0.25',
+      version='0.0.26',
       packages=find_packages(),
       install_requires=[
         "torchio>=0.18.86",

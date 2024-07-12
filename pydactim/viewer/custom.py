@@ -8,8 +8,9 @@ from scipy.interpolate import interp2d
 import nibabel as nib
 import numpy as np
 
-from pydactim.viewer.utils import create_lut
-from pydactim.viewer.settings import *
+from utils import is_dsc_param, create_lut
+from settings import *
+import matplotlib.pyplot as plt
 
 class ThumbnailFrame(QFrame):
     def __init__(self, path, replace_data, create_overlay):
@@ -55,10 +56,11 @@ class ThumbnailFrame(QFrame):
         event.accept()
 
 class CustomLabel(QLabel):
-    def __init__(self, path, view_data, update_slice, update_aif, axis, size=(1000,1000)):
+    def __init__(self, path, view_data, update_slice, update_aif, update_roi, axis, size=(1000,1000)):
         super().__init__()
         self.setAlignment(Qt.AlignCenter)  # Center the image in the label
         self.setMinimumSize(size[0], size[1]) # Set the minimum size for the QLabel
+        # self.setMaximumSize(size[0], size[1]) # Set the minimum size for the QLabel
         self.setStyleSheet("background-color: #000000;")
         self.setStyleSheet(f"border: 1px solid {BORDER_COLOR};")
         self.installEventFilter(self)  # Install event filter to handle events
@@ -75,11 +77,16 @@ class CustomLabel(QLabel):
         self.drag_start = QPoint()  # Store the starting point of the drag
         self.dragging = False  # Flag to track whether dragging is in progress
         
-        self.contrast_adjustment_start = False
-        self.contrast_min = self.data.min()  # Minimum value for contrast windowing
-        self.contrast_max = self.data.max()  # Maximum value for contrast windowing+
-        self.window_center = int((self.contrast_min + self.contrast_max) / 2)  # Initial contrast center
-        self.window_width = int(self.contrast_max - self.contrast_min)  # Initial contrast width
+        self.contrast_adjustment_start = False  
+        if len(np.unique(self.data)) == 2:
+            print("INFO - Special windowing for binary mask has been set up")
+            self.window_center = 1
+            self.window_width = 1
+        else:
+            self.contrast_min = self.data.min()  # Minimum value for contrast windowing
+            self.contrast_max = self.data.max()  # Maximum value for contrast windowing+
+            self.window_center = int((self.contrast_min + self.contrast_max) / 2)  # Initial contrast center
+            self.window_width = int(self.contrast_max - self.contrast_min)  # Initial contrast width
 
         self.zoom_factor = 1.0  # Initial zoom factor
         self.zooming = False  # Flag to track whether zooming is in progress
@@ -95,30 +102,46 @@ class CustomLabel(QLabel):
         self.mouse_threshold = 1
 
         self.overlay = False
+        self.overlay_toggle = False
+        self.overlay_path = ""
         self.overlay_data = None
         self.overlay_opacity = 50
+        self.contrast_adjustment_start_overlay = False
 
         self.roiable = True
         self.roiing = False
         self.roi_start = QPoint()
         self.roi_x = 500
         self.roi_y = 500
-        self.roi_width = 30
+        self.roi_width = ONED_HEIGHT*6/self.data.shape[0] if (is_dsc_param(self.path) or is_dsc_param(self.overlay_path)) else 30
 
         self.update_slice = update_slice
         self.update_aif = update_aif
+        self.update_roi = update_roi
         self.selected_widget = "info_widget"
 
-    def set_overlay(self, data, pixdim, lut):
+    def set_overlay(self, path, data, pixdim, lut):
         self.overlay = True
+        self.overlay_toggle = True
+        self.overlay_path = path
         self.overlay_data = data
         self.overlay_pixdim = pixdim
         self.overlay_lut = create_lut(lut)
+
+        if len(np.unique(self.overlay_data)) == 2:
+            print("INFO - Special windowing for binary mask has been set up")
+            self.window_center_overlay = 1
+            self.window_width_overlay = 1
+        else:
+            self.contrast_min_overlay = self.data.min()  # Minimum value for contrast windowing
+            self.contrast_max_overlay = self.data.max()  # Maximum value for contrast windowing+
+            self.window_center_overlay = int((self.contrast_min_overlay + self.contrast_max_overlay) / 2)  # Initial contrast center
+            self.window_width_overlay = int(self.contrast_max_overlay - self.contrast_min_overlay)  # Initial contrast width
         self.update_image()
 
     def update_image(self):
         current_data = self.data
-        current_data = np.clip(current_data, self.window_center - self.window_width / 2, self.window_center + self.window_width / 2)
+        # current_data =  
         current_data = (current_data - (self.window_center - self.window_width / 2)) / (self.window_width + 1e-12) * 255
 
         current_data = current_data.astype('uint8')
@@ -130,9 +153,9 @@ class CustomLabel(QLabel):
         pixmap = QPixmap.fromImage(self.qimage)
 
         pixel_width, pixel_height, _ = self.pixdim
-        scaled_width = int(pixmap.width() * pixel_width)
-        scaled_height = int(pixmap.height() * pixel_height)
-        pixmap = pixmap.scaled(scaled_width, scaled_height)
+        scaled_width = pixmap.width() * pixel_width
+        scaled_height = pixmap.height() * pixel_height
+        pixmap = pixmap.scaled(scaled_width, scaled_height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
         # # Resize the pixmap to fit the application window with some scaling factor (e.g., 2 times larger)
         self.scale_factor = 1 / self.zoom_factor
@@ -151,10 +174,13 @@ class CustomLabel(QLabel):
         else:
             pixmap = pixmap.scaled(ONED_WIDTH, ONED_HEIGHT, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
-        if self.overlay:
+        self.pixmap_width = pixmap.width()
+        self.pixmap_height = pixmap.height()
+
+        if self.overlay and self.overlay_toggle:
             current_overlay = self.overlay_data
-            current_overlay = np.clip(current_overlay, self.window_center - self.window_width / 2, self.window_center + self.window_width / 2)
-            current_overlay = (current_overlay - (self.window_center - self.window_width / 2)) / (self.window_width + 1e-12) * 255
+            current_overlay = np.clip(current_overlay, self.window_center_overlay - self.window_width_overlay / 2, self.window_center_overlay + self.window_width_overlay / 2)
+            current_overlay = (current_overlay - (self.window_center_overlay - self.window_width_overlay / 2)) / (self.window_width_overlay + 1e-12) * 255
 
             current_overlay = current_overlay.astype('uint8')
             current_overlay = self.overlay_lut[current_overlay]
@@ -164,23 +190,34 @@ class CustomLabel(QLabel):
             pixel_width, pixel_height, _ = self.overlay_pixdim
             scaled_width = int(current_overlay.width() * pixel_width)
             scaled_height = int(current_overlay.height() * pixel_height)
-            current_overlay = current_overlay.scaled(scaled_width, scaled_height)
-            current_overlay = current_overlay.scaled(pixmap.size(), Qt.KeepAspectRatio)
+            current_overlay = current_overlay.scaled(scaled_width, scaled_height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            current_overlay = current_overlay.scaled(pixmap.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             
             painter = QPainter()
             painter.begin(pixmap)
             painter.setOpacity(self.overlay_opacity / 100)
             painter.drawImage(0, 0, current_overlay)
+            painter.setBackgroundMode(Qt.OpaqueMode)
             painter.end()
 
-        if "perf" in self.path and self.roiable and self.selected_widget == "perf_widget":
+        if ("perf." in self.path or "t2star." in self.path) and self.roiable and self.selected_widget == "perf_widget":
             self.painterInstance = QPainter(pixmap)
             self.penRectangle = QPen(Qt.red)
-            self.penRectangle.setWidth(3)
+            self.penRectangle.setWidth(2)
 
             # draw rectangle on painter
             self.painterInstance.setPen(self.penRectangle)
-            self.painterInstance.drawRect(self.roi_x, self.roi_y,self.roi_width, self.roi_width)
+            self.painterInstance.drawRect(self.roi_x, self.roi_y, self.roi_width, self.roi_width)
+            self.painterInstance.end()
+
+        elif (is_dsc_param(self.path) or is_dsc_param(self.overlay_path)) and self.roiable and self.selected_widget == "perf_widget":
+            self.painterInstance = QPainter(pixmap)
+            self.penRectangle = QPen(Qt.white)
+            self.penRectangle.setWidth(2)
+
+            # draw rectangle on painter
+            self.painterInstance.setPen(self.penRectangle)
+            self.painterInstance.drawRect(self.roi_x, self.roi_y, self.roi_width, self.roi_width)
             self.painterInstance.end()
             
         self.pixmap = pixmap
@@ -201,10 +238,15 @@ class CustomLabel(QLabel):
                 # if 0 < x_pos < 0.1 * label_width or 0.9 * label_width < x_pos < label_width:
                 #     self.zooming = True
                 if x_pos > self.roi_x and x_pos < self.roi_x + self.roi_width:
-                    self.roiing = True
-                    self.roi_start = event.position()
-                    self.roi_start_x = self.roi_x
-                    self.roi_start_y = self.roi_y
+                    if self.pixmap_height == ONED_HEIGHT:
+                        offset = 41
+                    else:
+                        offset = 16
+                    if y_pos > self.roi_y + offset and y_pos < self.roi_y + offset + self.roi_width:
+                        self.roiing = True
+                        self.roi_start = event.position()
+                        self.roi_start_x = self.roi_x
+                        self.roi_start_y = self.roi_y
                 # else:
                 #     self.panning = True
                 #     self.pan_start = event.position()
@@ -214,6 +256,8 @@ class CustomLabel(QLabel):
                 # Start contrast adjustment when middle button is pressed
                 self.drag_start = event.position()
                 self.contrast_adjustment_start = self.window_center, self.window_width
+                if self.overlay:
+                    self.contrast_adjustment_start_overlay = self.window_center_overlay, self.window_width_overlay
 
         # MOUSE RELEASE EVENT
         elif event.type() == QEvent.Type.MouseButtonRelease:
@@ -243,6 +287,7 @@ class CustomLabel(QLabel):
                 self.update_slice(int(new_index), self.axis)
                 self.update_image()
                 self.update_aif()
+                self.compute_roi()
 
         # MOUSE RIGHT CLICK FOR SLICES
         elif event.type() == QEvent.Type.MouseMove and self.dragging:
@@ -255,6 +300,7 @@ class CustomLabel(QLabel):
                 self.update_slice(int(new_index), self.axis)
                 self.update_image()
                 self.update_aif()
+                self.compute_roi()
             self.drag_start = event.position()
 
             # delta = self.drag_start - event.position()
@@ -286,21 +332,29 @@ class CustomLabel(QLabel):
             num_steps_y = int(delta.y() * 1.1)
 
             # Calculate new window center and width based on the mouse movement
-            self.window_width = int(self.window_width - num_steps_x) 
-            if self.window_width < 1: self.window_width = 1
-            self.window_center = int(self.window_center + num_steps_y)
-            if self.window_center < 0: self.window_center = 0
+            if not self.overlay_toggle:
+                self.window_width = int(self.window_width - num_steps_x) 
+                if self.window_width < 1: self.window_width = 1
+                self.window_center = int(self.window_center + num_steps_y)
+                if self.window_center < 0: self.window_center = 0
+            else:
+                self.window_width_overlay = int(self.window_width_overlay - num_steps_x) 
+                if self.window_width_overlay < 1: self.window_width_overlay = 1
+                self.window_center_overlay = int(self.window_center_overlay + num_steps_y)
+                if self.window_center_overlay < 0: self.window_center_overlay = 0
 
             self.drag_start = event.position()
             self.update_image()
+            self.update_aif()
 
-        # # MOUSE LEFT CLICK FOR ZOOMING
+        # # MOUSE LEFT CLICK FOR ROI MOVEMENT
         elif event.type() == QEvent.Type.MouseMove and self.roiing and self.roiable:
             delta = event.position() - self.roi_start
             self.roi_x = self.roi_start_x - (-1*delta.x())
             self.roi_y = self.roi_start_y - (-1*delta.y())
             self.update_image()
             self.update_aif()
+            self.compute_roi()
 
         # elif event.type() == QEvent.Type.MouseMove and self.zooming:
         #     # Handle zooming when left button is pressed and mouse is moved
@@ -323,12 +377,12 @@ class CustomLabel(QLabel):
         #     self.pan_x = self.pan_start_x - (-1*delta.x())
         #     self.pan_y = self.pan_start_y - (-1*delta.y())
         #     self.update_image()
+        
+        # if event.type() == QEvent.Type.MouseMove and self.roiing and self.roiable and (is_dsc_param(self.path) or is_dsc_param(self.overlay_path)):
+          
 
-        # if event.type() == QEvent.Enter:
-        #     x = event.pos().x()
-        #     y = event.pos().y()
-        #     print("Mouse is over the label", self.pixmap.pixel(x,y))
             
+        
         # elif event.type() == QEvent.Leave:
         #     print("Mouse is not over the label", event.pos())
 
@@ -353,6 +407,42 @@ class CustomLabel(QLabel):
 
     def leaveEvent(self, event):
         self.setStyleSheet(f"border: 1px solid {LIGHT_BORDER_COLOR};")
+
+    def compute_roi(self):
+        if self.selected_widget == "perf_widget":
+            if is_dsc_param(self.overlay_path):
+                data = self.overlay_data
+                pixdim = self.overlay_pixdim
+            else: 
+                data = self.data
+                pixdim = self.pixdim
+
+            x = self.roi_x + self.roi_width / 2
+            y = self.roi_y + 41 + self.roi_width / 2
+            self.roi_xx = x * data.shape[1] // self.pixmap_width
+            if self.pixmap_height == ONED_HEIGHT:
+                self.roi_yy = (self.pixmap_height - y + 41) * data.shape[0] // self.pixmap_height
+            else: 
+                self.roi_yy = (self.pixmap_height - y + 16) * data.shape[0] // self.pixmap_height
+            
+            self.roi = data[round(self.data.shape[0]-self.roi_yy - 6//2):round(self.data.shape[0]-self.roi_yy + 6//2), round(self.roi_xx - 6//2):round(self.roi_xx + 6//2)]
+            
+            # DEBUG
+            # fig, ax = plt.subplots()
+            # vmin = np.min(data)
+            # vmax = np.max(data)
+            # ax.imshow(self.roi, vmin=vmin , vmax=vmax , cmap='turbo')
+            # plt.savefig("temp.png")
+            # plt.close()
+            
+            self.roi = self.roi.flatten()
+            self.roi_mean = np.mean(self.roi)
+            self.roi_std = np.std(self.roi)
+            self.roi_min = np.min(self.roi)
+            self.roi_max = np.max(self.roi)
+            self.roi_mm3 = len(self.roi) * pixdim[0] * pixdim[1]
+
+            self.update_roi()
 
 class ScrollArea(QScrollArea):
     def __init__(self):

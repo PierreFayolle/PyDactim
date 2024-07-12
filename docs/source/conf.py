@@ -17,8 +17,8 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Dactim MRI'
-copyright = '2023, Pierre Fayolle'
+project = 'PyDactim'
+copyright = '2024, Pierre Fayolle'
 author = 'Pierre Fayolle'
 
 

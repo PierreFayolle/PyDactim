@@ -5,6 +5,11 @@ import nibabel as nib
 from numba import njit
 import numpy as np
 
+def is_dsc_param(path):
+        if "CBV" in path.upper() or "CBF" in path.upper() or "MTT" in path.upper() or "TTP" in path.upper():
+            return True
+        return False
+
 @njit
 def to_sagittal(data, pixdim, path):
     sdata = np.transpose(data, (1,2,0))
@@ -32,7 +37,7 @@ def to_coronal(data, pixdim, path):
 def to_axial(data, pixdim, path):
     adata = np.rot90(data)
     apixdim = list(pixdim)
-    if "anat" in path:
+    if "anat" in path and not "flirt" in path:
         adata = np.fliplr(adata) 
     elif "dwi" in path and "flirt" in path:
         adata = np.fliplr(adata)
@@ -76,11 +81,17 @@ def create_lut(lut):
     elif lut == "Spectral":
         colormap = plt.get_cmap("nipy_spectral", 256)
         color_lut = (colormap(np.arange(256))[:, :3] * 255).astype(np.uint8)
+    elif lut == "Flow":
+        colormap = plt.get_cmap("coolwarm", 256)
+        color_lut = (colormap(np.arange(256))[:, :3] * 255).astype(np.uint8)
     elif lut == "Viridis":
         colormap = plt.get_cmap("viridis", 256)
         color_lut = (colormap(np.arange(256))[:, :3] * 255).astype(np.uint8)
     elif lut == "Qualitative":
         colormap = plt.get_cmap("Paired", 256)
+        color_lut = (colormap(np.arange(256))[:, :3] * 255).astype(np.uint8)
+    elif lut == "Random":
+        colormap = plt.get_cmap("prism", 256)
         color_lut = (colormap(np.arange(256))[:, :3] * 255).astype(np.uint8)
     return color_lut
 

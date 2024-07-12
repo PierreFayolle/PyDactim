@@ -6,9 +6,9 @@ import pyqtgraph as pg
 import nibabel as nib
 import numpy as np
 
-from pydactim.viewer.custom import CustomLabel
-from pydactim.viewer.utils import create_lut, reset_layout, to_sagittal, to_coronal, to_axial, create_4D_grid, to_3D
-from pydactim.viewer.settings import *
+from custom import CustomLabel
+from utils import is_dsc_param, create_lut, reset_layout, to_sagittal, to_coronal, to_axial, create_4D_grid, to_3D
+from settings import *
 from scipy import ndimage
 
 class ViewData():
@@ -19,7 +19,7 @@ class ViewData():
         self.z = z
 
 class ViewPanel(QWidget):
-    def __init__(self, path, update_text, plot_aif, state="3D"):
+    def __init__(self, path, update_text, plot_aif, update_roi, state="3D"):
         super().__init__()
 
         self.layout = QGridLayout()
@@ -28,10 +28,15 @@ class ViewPanel(QWidget):
         self.setStyleSheet("background-color: #000000")
 
         self.state = state
-        self.lut = "Grayscale"
+
+        if is_dsc_param(path):
+            self.lut = "Rainbow"
+        else:
+            self.lut = "Grayscale"
         
         self.update_text = update_text
         self.plot_aif = plot_aif
+        self.update_roi = update_roi
         self.init(path)
 
     def init(self, path):
@@ -40,23 +45,28 @@ class ViewPanel(QWidget):
         self.path = path
         self.load_data(self.path)
 
+        if is_dsc_param(self.path):
+            self.lut = "Rainbow"
+        else:
+            self.lut = "Grayscale"
+
         if not self.ensure3D:
-            self.sagittal_label = CustomLabel(self.path, self.s, self.update_slice, self.update_label_aif, "Sagittal", size=(500,500))
+            self.sagittal_label = CustomLabel(self.path, self.s, self.update_slice, self.update_label_aif, self.update_label_roi, "Sagittal", size=(500,500))
             self.sagittal_label.lut = create_lut(self.lut)
-            self.coronal_label = CustomLabel(self.path, self.c, self.update_slice, self.update_label_aif, "Coronal", size=(500,500))
+            self.coronal_label = CustomLabel(self.path, self.c, self.update_slice, self.update_label_aif, self.update_label_roi, "Coronal", size=(500,500))
             self.coronal_label.lut = create_lut(self.lut)
-            self.axial_label = CustomLabel(self.path, self.a, self.update_slice, self.update_label_aif, "Axial", size=(500,500))
+            self.axial_label = CustomLabel(self.path, self.a, self.update_slice, self.update_label_aif, self.update_label_roi, "Axial", size=(500,500))
             self.axial_label.lut = create_lut(self.lut)
 
         if self.ensure3D:
-            self.axial_label = CustomLabel(self.path, self.a, self.update_slice, self.update_label_aif, "Axial", size=(1000,1000))
+            self.axial_label = CustomLabel(self.path, self.a, self.update_slice, self.update_label_aif, self.update_label_roi, "Axial", size=(1000,1000))
             self.axial_label.lut = create_lut(self.lut)
         
         self.update_layout()
 
     def load_data(self, path):
         self.img = nib.load(path)
-        self.data = self.img.get_fdata()
+        self.data = self.img.get_fdata().astype(np.float32)
         self.shape = self.img.shape
         self.pixdim = self.img.header["pixdim"][1:4]
 
@@ -164,7 +174,8 @@ class ViewPanel(QWidget):
             label.update_image()
 
     def update_label_aif(self):
-        if "perf" in self.path and len(self.shape) == 4:
+        self.update_text()
+        if ("perf." in self.path or "t2star." in self.path or "t1w." in self.path) and len(self.shape) == 4:
             x = min((self.axial_label.roi_x + (self.axial_label.roi_width // 2)) * self.shape[1] / ONED_WIDTH, self.shape[1]-1)
             y = min((self.axial_label.roi_y + (self.axial_label.roi_width // 2)) * self.shape[0] / ONED_WIDTH, self.shape[0]-1)
             z =  self.a_slice % self.shape[2]
@@ -184,8 +195,24 @@ class ViewPanel(QWidget):
             aif = None
             mean = None
 
-
-
+    def update_label_roi(self):
+        self.update_text()
+        if (is_dsc_param(self.path) or is_dsc_param(self.axial_label.overlay_path)) and len(self.shape) == 3:
+            self.plot_aif.clear()
+            histo, bins = np.histogram(self.axial_label.roi, bins=49)
+            # print(histo)
+            self.plot_aif.plot(histo, pen=pg.mkPen(color=(255, 0, 0)))
+            self.update_roi(
+                self.axial_label.roi_xx, 
+                self.axial_label.roi_yy, 
+                self.axial_label.slice_index,
+                self.axial_label.roi_mean,
+                self.axial_label.roi_std,
+                self.axial_label.roi_min,
+                self.axial_label.roi_max,
+                self.axial_label.roi_mm3,
+            )
+            # self.plot_aif.plot(mean, pen=pg.mkPen(color=(255, 255, 255)))
         
         # self.plot_aif(aif)
 
@@ -225,9 +252,13 @@ class ViewPanel(QWidget):
             dlg.setText("The overlay data is not in the\nsame space than the previous data")
             button = dlg.exec()
 
-        self.sagittal_label.set_overlay(self.osdata[..., self.s_slice], self.ospixdim, "Grayscale")
-        self.coronal_label.set_overlay(self.ocdata[..., self.c_slice], self.ocpixdim, "Grayscale")
-        self.axial_label.set_overlay(self.oadata[..., self.a_slice], self.oapixdim, "Grayscale")
+        if is_dsc_param(self.opath):
+            lut = "Rainbow"
+        else:
+            lut = "Grayscale"
+        self.sagittal_label.set_overlay(path, self.osdata[..., self.s_slice], self.ospixdim, lut)
+        self.coronal_label.set_overlay(path, self.ocdata[..., self.c_slice], self.ocpixdim, lut)
+        self.axial_label.set_overlay(path, self.oadata[..., self.a_slice], self.oapixdim, lut)
         print("INFO - Overlay successfully loaded")
 
     def keyPressEvent(self, event):

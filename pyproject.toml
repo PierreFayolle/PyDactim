@@ -3,10 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "dactim_mri"
-version = "0.0.21"
+name = "pydactim"
+version = "0.0.26"
 authors = [
-  { name="Pierre FAYOLLE", email="pierre.fayolle@chu-poitiers.fr" },
+  { name="Pierre FAYOLLE", email="pierre.fayolle@univ-poitiers.fr" },
 ]
 description = "A tool to preprocess MRI data"
 readme = "README.md"
