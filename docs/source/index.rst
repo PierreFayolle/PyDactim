@@ -47,7 +47,7 @@ It includes:
 Installation
 ------------
 
-Requires at least Python 3.7 or above. Also requires `Pytorch <https://github.com/pytorch/pytorch/>`__, `Torchio <https://github.com/fepegar/torchio/>`__, `Numpy <https://github.com/numpy/numpy/>`__, `Nibabel <https://github.com/nipy/nibabel/>`__, `SimpleITK <https://github.com/SimpleITK/SimpleITK/>`__, `SimpleITK <https://github.com/matplotlib/matplotlib/>`__, `Pydicom <https://github.com/pydicom/pydicom/>`__, `Dicom2nifti <https://github.com/icometrix/dicom2nifti/>`__.
+Requires at least Python 3.7 or above. Also requires `Pytorch <https://github.com/pytorch/pytorch/>`__, `Torchio <https://github.com/fepegar/torchio/>`__, `Numpy <https://github.com/numpy/numpy/>`__, `Nibabel <https://github.com/nipy/nibabel/>`__, `SimpleITK <https://github.com/SimpleITK/SimpleITK/>`__, `Pydicom <https://github.com/pydicom/pydicom/>`__, `Dicom2nifti <https://github.com/icometrix/dicom2nifti/>`__.
 
 
 Can be quickly installed with pip :
