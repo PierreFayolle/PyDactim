@@ -18,13 +18,13 @@ PyDactim Documentation
       <img src="_static/Univ-logo.png" width="163px" style="margin-right: 10px">
    </div>
 
-|Windows| |PyPI pyversions| |PyPI version fury.io| |Open In Collab|
+|PyPI pyversions| |PyPI version fury.io|
 
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
-   :target: https://pypi.python.org/pypi/dactim-mri/
+   :target: https://pypi.python.org/pypi/pydactim/
 
 .. |PyPI version fury.io| image:: https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white
-   :target: https://pypi.python.org/pypi/dactim-mri/
+   :target: https://pypi.python.org/pypi/pydactim/
 
 .. .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
 ..    :target: https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb
