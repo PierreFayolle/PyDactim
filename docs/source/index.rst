@@ -23,7 +23,7 @@ PyDactim Documentation
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://pypi.python.org/pypi/pydactim/
 
-.. |PyPI version fury.io| image:: https://img.shields.io/pypi/v/dactim_mri?label=PyPI%20version&logo=python&logoColor=white
+.. |PyPI version fury.io| image:: https://img.shields.io/pypi/v/pydactim
    :target: https://pypi.python.org/pypi/pydactim/
 
 .. .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
