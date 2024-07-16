@@ -16,6 +16,7 @@ from pydactim.transformation import (n4_bias_field_correction,
     registration, apply_transformation, resample, histogram_matching, 
     apply_mask, substract, susan, normalize, crop, apply_crop, copy_affine, skull_stripping, 
     remove_small_object, tissue_classifier, add_tissue_class, prediction_glioma, uncertainty_prediction_glioma)
+
 from pydactim.sorting import sort_dicom
 from pydactim.conversion import convert_dicom_to_nifti
 from custom import ThumbnailFrame, ScrollArea, ComboBox, AnimatedToggle
@@ -58,7 +59,7 @@ class NiftiViewer(QMainWindow):
         file_menu = menubar.addMenu("File")
         edit_menu = menubar.addMenu("Edit")
         image_menu = menubar.addMenu("Image")
-        transform_menu = menubar.addMenu("Transforms")
+        transform_menu = menubar.addMenu("Scripts")
         view_menu = menubar.addMenu("View")
 
         # Add actions to the File menu
@@ -120,50 +121,73 @@ class NiftiViewer(QMainWindow):
         action.triggered.connect(lambda x: self.toggle_view("Mosaic"))
         view_menu.addAction(action)
 
-        # if not self.ensure_axial:
         action = QAction("3D view", self)
         action.triggered.connect(lambda x: self.toggle_view("3D"))
         view_menu.addAction(action)
 
-        action = QAction("Auto Crop", self)
+        # AI
+        ai_submenu = transform_menu.addMenu("AI segmentation")
+
+        action = QAction("Brain", self)
+        action.triggered.connect(lambda x: self.transforms("Skull stripping"))
+        ai_submenu.addAction(action)
+
+        ai_action_1 = QAction("Glioma", self)
+        ai_action_1.triggered.connect(lambda x: self.transforms("Glioma"))
+        ai_submenu.addAction(ai_action_1)
+
+        ai_action_3 = QAction("Meningioma", self)
+        ai_action_3.triggered.connect(lambda x: self.transforms("Meningioma"))
+        ai_submenu.addAction(ai_action_3)
+
+        ai_action_2 = QAction("Multiple sclerosis", self)
+        ai_action_2.triggered.connect(lambda x: self.transforms("Multiple sclerosis"))
+        ai_submenu.addAction(ai_action_2)
+
+        # Crop
+        crop_submenu = transform_menu.addMenu("Crop")
+
+        action = QAction("Auto crop", self)
         action.triggered.connect(lambda x: self.transforms("Auto crop"))
-        transform_menu.addAction(action)
+        crop_submenu.addAction(action)
 
-        action = QAction("Apply Crop", self)
+        action = QAction("Apply crop", self)
         action.triggered.connect(lambda x: self.transforms("Apply crop"))
-        transform_menu.addAction(action)
+        crop_submenu.addAction(action)
 
-        action = QAction("Apply mask", self)
-        action.triggered.connect(lambda x: self.transforms("Apply mask"))
-        transform_menu.addAction(action)
+        filter_submenu = transform_menu.addMenu("Filter")
 
-        action = QAction("Bias field correction", self)
-        action.triggered.connect(lambda x: self.transforms("Bias field correction"))
-        transform_menu.addAction(action)
-
-        action = QAction("Resample voxels", self)
-        action.triggered.connect(lambda x: self.transforms("Resample voxels"))
-        transform_menu.addAction(action)
-
-        action = QAction("Dilate", self)
-        action.triggered.connect(lambda x: self.transforms("Dilate"))
-        transform_menu.addAction(action)
-
-        action = QAction("Registration", self)
-        action.triggered.connect(lambda x: self.transforms("Registration"))
-        transform_menu.addAction(action)
-
-        action = QAction("Apply transformation", self)
-        action.triggered.connect(lambda x: self.transforms("Apply transformation"))
-        transform_menu.addAction(action)
+        action = QAction("Remove islands", self)
+        action.triggered.connect(lambda x: self.transforms("Remove islands"))
+        filter_submenu.addAction(action)
 
         action = QAction("Susan", self)
         action.triggered.connect(lambda x: self.transforms("Susan"))
-        transform_menu.addAction(action)
+        filter_submenu.addAction(action)
 
-        action = QAction("Skull stripping", self)
-        action.triggered.connect(lambda x: self.transforms("Skull stripping"))
-        transform_menu.addAction(action)
+        registration_submenu = transform_menu.addMenu("Registration")
+
+        action = QAction("Registration", self)
+        action.triggered.connect(lambda x: self.transforms("Registration"))
+        registration_submenu.addAction(action)
+
+        action = QAction("Apply registration", self)
+        action.triggered.connect(lambda x: self.transforms("Apply registration"))
+        registration_submenu.addAction(action)
+
+        other_submenu = transform_menu.addMenu("Others")
+
+        action = QAction("Apply mask", self)
+        action.triggered.connect(lambda x: self.transforms("Apply mask"))
+        other_submenu.addAction(action)
+
+        action = QAction("Bias field correction", self)
+        action.triggered.connect(lambda x: self.transforms("Bias field correction"))
+        other_submenu.addAction(action)
+
+        action = QAction("Resample voxels", self)
+        action.triggered.connect(lambda x: self.transforms("Resample voxels"))
+        other_submenu.addAction(action)
 
     def init_ui(self):
         print("INFO - Creating left panel")
@@ -723,7 +747,7 @@ class NiftiViewer(QMainWindow):
                 self.load_sequence(new_path)
                 self.nifti_found.append(new_path)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
-        elif args[0] == "Dilate":
+        elif args[0] == "Remove islands":
             new_path = remove_small_object(args[1], int(args[2]), force=args[3])
             if new_path not in self.nifti_found:
                 self.load_sequence(new_path)
@@ -784,6 +808,12 @@ class NiftiViewer(QMainWindow):
                 self.load_sequence(new_path2)
                 self.nifti_found.append(new_path2)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+        elif args[0] == "Glioma":
+            new_path = prediction_glioma(args[1], model_path=args[2], landmark_path=args[3], force=args[4])
+            if new_path not in self.nifti_found:
+                self.load_sequence(new_path)
+                self.nifti_found.append(new_path)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
 
     def closeEvent(self, event):
         for window in self.dynamic_windows:
@@ -802,6 +832,9 @@ class TransformsGUI(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
+
+        self.setWindowTitle("PyDactim Transformation")
+        self.show_centered()
 
         self.path = path
         self.run_transform = run_transform
@@ -902,8 +935,8 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), voxel.text()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        elif transform == "Dilate":
-            title = QLabel("Path for the image to dilate")
+        elif transform == "Remove islands":
+            title = QLabel("Path for the image in which removing islands")
             combo_box = QComboBox(self)
             combo_box.addItems(path)
             combo_box.setCurrentText(selected_path)
@@ -1066,8 +1099,38 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), mask.isChecked(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        self.setWindowTitle("PyDactim Transformation")
-        self.show_centered()
+        elif transform == "Glioma":
+            title = QLabel("Path for the input T2-FLAIR")
+            combo_box = QComboBox(self)
+            combo_box.addItems(path)
+            combo_box.setCurrentText(selected_path)
+            layout.addWidget(title)
+            layout.addWidget(combo_box)
+
+            title = QLabel("Model path (including landmarks)")
+            dialog = QPushButton("Browse")
+            dialog.clicked.connect(self.get_ai_dir)
+            self.model = QLineEdit(self)
+            self.extra = QLineEdit(self)
+
+            layout.addWidget(title)
+            layout.addWidget(dialog)
+            layout.addWidget(self.model)
+            layout.addWidget(self.extra)
+
+            force = QCheckBox("Force")
+            layout.addWidget(force)
+
+            button = QPushButton("Run Function", self)
+            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.model.text(), self.extra.text(), force.isChecked()))
+            layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+    def get_ai_dir(self):
+        dialog = QFileDialog()
+        dir = dialog.getExistingDirectory(None, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
+        for file in os.listdir(dir):
+            if file.endswith(".pth"): self.model.setText(os.path.join(dir, file))
+            elif file.endswith(".npy"): self.extra.setText(os.path.join(dir, file))
 
     def get_extra_dir(self):
         dialog = QFileDialog()

@@ -689,7 +689,7 @@ def extract_dim(input_path, dim, force=True, suffix=""):
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     return output_path
 
-def prediction_glioma(input_path, model_path, force=True, suffix="predicted"):
+def prediction_glioma(input_path, model_path, landmark_path, force=True, suffix="predicted"):
     print(f"INFO - Starting glioma prediction for\n\t{input_path :}")
     output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
@@ -718,7 +718,7 @@ def prediction_glioma(input_path, model_path, force=True, suffix="predicted"):
             tio.ToCanonical(),
             tio.Resample(1),
             tio.CropOrPad((176, 208, 160)),
-            tio.HistogramStandardization({"image": np.load("E:/Leo/script/results/landmarks.npy")}),
+            tio.HistogramStandardization({"image": np.load(landmark_path)}),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
     ])
 
