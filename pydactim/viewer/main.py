@@ -3,14 +3,15 @@ import os
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
-from PySide6.QtWidgets import QHeaderView, QApplication, QPushButton, QSlider, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QFileDialog, QMenu
+from PySide6.QtWidgets import QFrame, QHeaderView, QApplication, QPushButton, QSlider, QDialog, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QFileDialog, QMenu
 from PySide6.QtGui import QImage, QPixmap, QAction, QGuiApplication, QIcon
-from PySide6.QtCore import Qt, QEvent, QRect, QSize
+from PySide6.QtCore import Qt, QEvent, QRect, QSize, QSettings
 import pyqtgraph as pg
 import matplotlib.pyplot as plt
 import glob
 from io import StringIO
 import imageio
+import tempfile
 
 from pydactim.transformation import (n4_bias_field_correction,
     registration, apply_transformation, resample, histogram_matching, 
@@ -24,6 +25,76 @@ from view_panel import ViewPanel
 from utils import create_thumbnail, get_darkModePalette, reset_layout
 from settings import *
 
+class AiModelPathDialog(QDialog):
+    def __init__(self, settings):
+        super().__init__()
+
+        self.settings = settings
+
+        self.setWindowTitle("Select AI Model Directories")
+        self.layout = QVBoxLayout()
+
+        self.skull_stripping_label = QLabel("Skull Stripping Model Directory:")
+        self.layout.addWidget(self.skull_stripping_label)
+        self.skull_stripping_path = QLabel(settings.value("ai_model_paths/skull_stripping", ""))
+        self.layout.addWidget(self.skull_stripping_path)
+        self.skull_stripping_button = QPushButton("Select Skull Stripping Model Directory")
+        self.skull_stripping_button.clicked.connect(self.select_skull_stripping_path)
+        self.layout.addWidget(self.skull_stripping_button)
+
+        self.add_separator()
+
+        self.glioma_segmentation_label = QLabel("Glioma Segmentation Model directory (with weights and landmarks):")
+        self.layout.addWidget(self.glioma_segmentation_label)
+        self.glioma_segmentation_path = QLabel(settings.value("ai_model_paths/glioma", ""))
+        self.layout.addWidget(self.glioma_segmentation_path)
+        self.glioma_segmentation_button = QPushButton("Select Glioma Segmentation Model Directory")
+        self.glioma_segmentation_button.clicked.connect(self.select_glioma_segmentation_path)
+        self.layout.addWidget(self.glioma_segmentation_button)
+
+        self.add_separator()
+
+        self.ms_segmentation_label = QLabel("MS Segmentation Model directory (with weights and landmarks):")
+        self.layout.addWidget(self.ms_segmentation_label)
+        self.ms_segmentation_path = QLabel(settings.value("ai_model_paths/ms", ""))
+        self.layout.addWidget(self.ms_segmentation_path)
+        self.ms_segmentation_button = QPushButton("Select MS Segmentation Model Directory")
+        self.ms_segmentation_button.clicked.connect(self.select_ms_segmentation_path)
+        self.layout.addWidget(self.ms_segmentation_button)
+
+        self.add_separator()
+
+        self.save_button = QPushButton("Save")
+        self.save_button.clicked.connect(self.save_paths)
+        self.layout.addWidget(self.save_button)
+
+        self.setLayout(self.layout)
+
+    def add_separator(self):
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(separator)
+
+    def select_skull_stripping_path(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Skull Stripping Model Directory")
+        if path: self.skull_stripping_path.setText(path)
+
+    def select_glioma_segmentation_path(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Glioma Segmentation Model Directory")
+        if path: self.glioma_segmentation_path.setText(path)
+
+    def select_ms_segmentation_path(self):
+        path = QFileDialog.getExistingDirectory(self, "Select MS Segmentation Model Directory")
+        if path: self.ms_segmentation_path.setText(path)
+
+    def save_paths(self):
+        self.settings.setValue("ai_model_paths/skull_stripping", self.skull_stripping_path.text())
+        self.settings.setValue("ai_model_paths/glioma", self.glioma_segmentation_path.text())
+        self.settings.setValue("ai_model_paths/ms", self.ms_segmentation_path.text())
+        # Save other AI model paths similarly
+        self.accept()
+
 class NiftiViewer(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -33,7 +104,7 @@ class NiftiViewer(QMainWindow):
         # self.nifti_found = glob.glob('./**/*.nii.gz', recursive=True)
         self.init_tabs()
         # self.init_all()
-        self.open_volume()
+        # self.open_volume()
         self.dynamic_windows = []
 
     def init_all(self):
@@ -41,8 +112,8 @@ class NiftiViewer(QMainWindow):
 
         print("INFO - Creating UI")
         self.init_ui()
-        print("INFO - Loading images")
-        self.load_sequences(self.nifti_found)
+        # print("INFO - Loading images")
+        # self.load_sequences(self.nifti_found)
 
         self.lut = None
         self.overlay_lut = None
@@ -56,7 +127,7 @@ class NiftiViewer(QMainWindow):
         print("INFO - Creating menu tab")
         # Add a menu bar
         menubar = self.menuBar()
-        file_menu = menubar.addMenu("File")
+        self.file_menu = menubar.addMenu("File")
         edit_menu = menubar.addMenu("Edit")
         image_menu = menubar.addMenu("Image")
         transform_menu = menubar.addMenu("Scripts")
@@ -64,20 +135,39 @@ class NiftiViewer(QMainWindow):
 
         # Add actions to the File menu
         action = QAction("Open directory", self)
-        action.triggered.connect(self.open_volume)
-        file_menu.addAction(action)
+        action.triggered.connect(lambda x: self.open_volume(None))
+        self.file_menu.addAction(action)
 
         action = QAction("Add file", self)
-        action.triggered.connect(self.add_file)
-        file_menu.addAction(action)
+        action.triggered.connect(lambda x: self.add_file(None))
+        self.file_menu.addAction(action)
+
+        self.recent_submenu = self.file_menu.addMenu("Recent data")
+        settings = self.init_config()
+        recent_paths = [settings.value(f"recent_paths/recent_path_{i}", "") for i in range(1, 11)]
+
+        for path in recent_paths:
+            if os.path.exists(path):
+                action = QAction(path, self)
+                if os.path.isdir(path): action.triggered.connect(lambda checked, p=path: self.open_volume(p))
+                else: action.triggered.connect(lambda checked, p=path: self.add_file(p))
+                self.recent_submenu.addAction(action)
+
+        action = QAction("Settings", self)
+        action.triggered.connect(self.settings)
+        self.file_menu.addAction(action)
 
         action = QAction("Screenshot", self)
         action.triggered.connect(self.screenshot)
-        file_menu.addAction(action)
+        self.file_menu.addAction(action)
 
         action = QAction("Gif", self)
         action.triggered.connect(self.gifshot)
-        file_menu.addAction(action)
+        self.file_menu.addAction(action)
+
+        action = QAction("Close", self)
+        action.triggered.connect(lambda x: sys.exit(1))
+        self.file_menu.addAction(action)
 
         action = QAction("Sort DICOM directory", self)
         action.triggered.connect(lambda x: self.transforms("Sort DICOM"))
@@ -395,6 +485,59 @@ class NiftiViewer(QMainWindow):
             .replace('$BORDER_COLOR', BORDER_COLOR)
         )
 
+    def init_config(self):
+        temp_dir = tempfile.gettempdir()
+        config_path = os.path.join(temp_dir, 'pydactim_view_config.ini')
+        settings = QSettings(config_path, QSettings.IniFormat)
+
+        for i in range(1, 11):
+            if not settings.contains(f"recent_paths/recent_path_{i}"):
+                settings.setValue(f"recent_paths/recent_path_{i}", "")
+
+        if not settings.contains("ai_model_paths/skull_stripping"):
+            settings.setValue("ai_model_paths/skull_stripping", "")
+
+        if not settings.contains("ai_model_paths/glioma"):
+            settings.setValue("ai_model_paths/glioma", "")
+
+        if not settings.contains("ai_model_paths/ms"):
+            settings.setValue("ai_model_paths/ms", "")
+
+        return settings
+
+    def settings(self):
+        self.open_ai_model_path_dialog()
+
+    def add_recent_path(self, path):
+        settings = self.init_config()
+        recent_paths = [settings.value(f"recent_paths/recent_path_{i}", "") for i in range(1, 11)]
+        
+        # Ensure the path is not already in the list
+        if path in recent_paths:
+            recent_paths.remove(path)
+        
+        recent_paths.insert(0, path)
+        
+        # Limit to 10 recent paths
+        if len(recent_paths) > 10:
+            recent_paths = recent_paths[:10]
+        
+        for i in range(1, 11):
+            settings.setValue(f"recent_paths/recent_path_{i}", recent_paths[i-1] if i-1 < len(recent_paths) else "")
+
+        self.recent_submenu.clear()
+        for path in recent_paths:
+            if os.path.exists(path):
+                action = QAction(path, self)
+                if os.path.isdir(path): action.triggered.connect(lambda checked, p=path: self.open_volume(p))
+                else: action.triggered.connect(lambda checked, p=path: self.add_file(p))
+                self.recent_submenu.addAction(action)
+
+    def open_ai_model_path_dialog(self):
+        settings = self.init_config()
+        dialog = AiModelPathDialog(settings)
+        dialog.exec_()
+
     def show_info(self):
         self.perf_widget.hide()
         self.info_widget.show()
@@ -409,24 +552,38 @@ class NiftiViewer(QMainWindow):
         self.view_widget.axial_label.selected_widget = self.selected_widget
         self.view_widget.axial_label.update_image()
 
-    def open_volume(self):
-        self.dirname = QFileDialog.getExistingDirectory(self, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
+    def open_volume(self, path=None):
+        if path is None: self.dirname = QFileDialog.getExistingDirectory(self, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
+        else: self.dirname = path
         # self.dirname = "D:/Studies/GLIOBIOPSY/data/sub-018/"
         self.nifti_found = glob.glob(os.path.join(self.dirname, '**/*.nii*'), recursive=True)
-        self.init_all()
+        if not hasattr(self, "thumbnail_title"): 
+            self.init_all()
+            self.load_sequences(self.nifti_found)
+        else: self.load_sequences(self.nifti_found)
+        self.add_recent_path(self.dirname)
 
-    def add_file(self):
-        new_path = QFileDialog.getOpenFileName(
-            self,
-            "Open File",
-            "${HOME}",
-            "NIfTI Compressed Files (*.nii.gz);; NIfTI Files (*.nii)",
-        )[0]
+    def add_file(self, path=None):
+        if path is None:
+            new_path = QFileDialog.getOpenFileName(
+                self,
+                "Open File",
+                "${HOME}",
+                "NIfTI Compressed Files (*.nii.gz);; NIfTI Files (*.nii)",
+            )[0]
+        else: new_path = path
+
+        if not hasattr(self, "nifti_found"):
+            self.nifti_found = []
         if new_path not in self.nifti_found:
-            self.load_sequence(new_path)
             self.nifti_found.append(new_path)
+            if not hasattr(self, "thumbnail_title"): 
+                self.init_all()
+                self.load_sequences(self.nifti_found)
+            else: self.load_sequence(new_path)
             self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
-
+        self.add_recent_path(new_path)
+        
     def load_sequences(self, paths):
         self.thumbnail_widget = QWidget()
         self.thumbnail_layout = QVBoxLayout()
@@ -719,7 +876,7 @@ class NiftiViewer(QMainWindow):
             widget.update_image()
 
     def transforms(self, transform):
-        new_window = TransformsGUI(self.nifti_found, self.view_widget.path, transform, self.run_transform)
+        new_window = TransformsGUI(self.nifti_found, self.view_widget.path, transform, self.run_transform, self.init_config)
         new_window.show()
         self.dynamic_windows.append(new_window)
 
@@ -828,13 +985,15 @@ class NiftiViewer(QMainWindow):
         self.move(qr.topLeft())
 
 class TransformsGUI(QWidget):
-    def __init__(self, path, selected_path, transform, run_transform):
+    def __init__(self, path, selected_path, transform, run_transform, conf):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
 
         self.setWindowTitle("PyDactim Transformation")
         self.show_centered()
+
+        settings = conf()
 
         self.path = path
         self.run_transform = run_transform
@@ -988,6 +1147,7 @@ class TransformsGUI(QWidget):
             dialog = QPushButton("Browse")
             dialog.clicked.connect(self.get_extra_dir)
             self.extra = QLineEdit(self)
+            self.extra.setText(settings.value("ai_model_paths/skull_stripping", ""))
             
             layout.addWidget(title)
             layout.addWidget(self.extra)
@@ -1109,9 +1269,14 @@ class TransformsGUI(QWidget):
 
             title = QLabel("Model path (including landmarks)")
             dialog = QPushButton("Browse")
+        
             dialog.clicked.connect(self.get_ai_dir)
             self.model = QLineEdit(self)
             self.extra = QLineEdit(self)
+
+            path = settings.value("ai_model_paths/glioma", "")
+            if path is not None: self.set_ai_dir(path)
+            else: "C:\\"
 
             layout.addWidget(title)
             layout.addWidget(dialog)
@@ -1125,12 +1290,15 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.model.text(), self.extra.text(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-    def get_ai_dir(self):
-        dialog = QFileDialog()
-        dir = dialog.getExistingDirectory(None, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
+    def set_ai_dir(self, dir):
         for file in os.listdir(dir):
             if file.endswith(".pth"): self.model.setText(os.path.join(dir, file))
             elif file.endswith(".npy"): self.extra.setText(os.path.join(dir, file))
+
+    def get_ai_dir(self):
+        dialog = QFileDialog()
+        dir = dialog.getExistingDirectory(None, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
+        self.set_ai_dir(dir)
 
     def get_extra_dir(self):
         dialog = QFileDialog()
