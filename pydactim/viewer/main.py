@@ -741,13 +741,33 @@ class NiftiViewer(QMainWindow):
 
     def screenshot(self):
         screen = QApplication.primaryScreen()
-        screenshot = screen.grabWindow(self.image_label.winId())
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save Screenshot", "", "PNG Files (*.png)")
+        dir = QFileDialog.getExistingDirectory(self, "Select a directory", "C:\\", QFileDialog.ShowDirsOnly)
 
-        if file_path:
-            # Take the screenshot of the label and save it to the chosen path
-            screenshot.save(file_path, "png")
-            print("Screenshot saved to:", file_path)
+        if self.view_widget.state != "3D":
+            if self.view_widget.state == "Axial":
+                screenshot = screen.grabWindow(self.view_widget.axial_label.winId())
+                name = f"{os.path.basename(self.view_widget.path)}_axial.png"
+            elif self.view_widget.state == "Coronal":
+                screenshot = screen.grabWindow(self.view_widget.coronal_label.winId())
+                name = f"{os.path.basename(self.view_widget.path)}_coronal.png"
+            elif self.view_widget.state == "Sagittal":
+                screenshot = screen.grabWindow(self.view_widget.sagittal_label.winId())
+                name = f"{os.path.basename(self.view_widget.path)}_sagittal.png"
+
+            screenshot.save(os.path.join(dir, name), "png")
+            print(f"INFO - Successfully screenshot at: {os.path.join(dir, name)}")
+        else:
+            screenshot = screen.grabWindow(self.view_widget.axial_label.winId())
+            name = f"{os.path.basename(self.view_widget.path)}_axial.png"
+            screenshot.save(os.path.join(dir, name), "png")
+
+            screenshot = screen.grabWindow(self.view_widget.coronal_label.winId())
+            name = f"{os.path.basename(self.view_widget.path)}_coronal.png"
+            screenshot.save(os.path.join(dir, name), "png")
+
+            screenshot = screen.grabWindow(self.view_widget.sagittal_label.winId())
+            name = f"{os.path.basename(self.view_widget.path)}_sagittal.png"
+            screenshot.save(os.path.join(dir, name), "png")
         
     def gifshot(self):
         gif_array = []
