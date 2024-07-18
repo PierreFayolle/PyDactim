@@ -230,8 +230,8 @@ class NiftiViewer(QMainWindow):
         ai_action_3.triggered.connect(lambda x: self.transforms("Meningioma"))
         ai_submenu.addAction(ai_action_3)
 
-        ai_action_2 = QAction("Multiple sclerosis", self)
-        ai_action_2.triggered.connect(lambda x: self.transforms("Multiple sclerosis"))
+        ai_action_2 = QAction("Multiple Sclerosis", self)
+        ai_action_2.triggered.connect(lambda x: self.transforms("Multiple Sclerosis"))
         ai_submenu.addAction(ai_action_2)
 
         # Crop
@@ -992,10 +992,15 @@ class NiftiViewer(QMainWindow):
                 self.nifti_found.append(new_path)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
         elif args[0] == "Multiple Sclerosis":
-            new_path = prediction_multiple_sclerosis(args[1], model_path=args[2], landmark_path=args[3], force=args[4])
+            new_path, new_path2 = prediction_multiple_sclerosis(args[1], model_path=args[2], landmark_path=args[3], force=args[4])
+            print(new_path)
             if new_path not in self.nifti_found:
                 self.load_sequence(new_path)
                 self.nifti_found.append(new_path)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+            if new_path2 not in self.nifti_found:
+                self.load_sequence(new_path2)
+                self.nifti_found.append(new_path2)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
 
     def closeEvent(self, event):
@@ -1316,7 +1321,7 @@ class TransformsGUI(QWidget):
             button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.model.text(), self.extra.text(), force.isChecked()))
             layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        elif transform == "Multiple sclerosis":
+        elif transform == "Multiple Sclerosis":
             title = QLabel("Path for the input T2-FLAIR")
             combo_box = QComboBox(self)
             combo_box.addItems(path)

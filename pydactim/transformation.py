@@ -11,7 +11,7 @@ import itk
 from numba import jit
 import torchio as tio
 import torch
-from models.mpunet import MPUnetPP2CBND
+from .models.mpunet import MPUnetPP2CBND
 
 def n4_bias_field_correction(input_path, mask=False, force=True, suffix="corrected"):
     """ Correct the bias field correction.
@@ -794,21 +794,22 @@ def prediction_multiple_sclerosis(input_path, model_path, landmark_path, force=T
 
     affine = nib.load(input_path).affine
 
+    output_path = input_path.replace(".nii", "_predicted.nii")
+    input_path = input_path.replace(".nii", "_input.nii")
     nib.save(
         nib.Nifti1Image(val_inputs, affine), 
-        input_path.replace(".nii", "_input.nii")
+        input_path
     )
 
     val_outputs[val_outputs <= 0.01] = 0
     val_outputs[val_outputs > 0.01] = 1
-    output_path = input_path.replace(".nii", "_predicted.nii")
     nib.save(
         nib.Nifti1Image(val_outputs, affine), 
         output_path
     )
 
     print(f"INFO - Saving generated image at\n\t{output_path :}")
-    return output_path
+    return output_path, input_path
 
 def uncertainty_prediction_glioma(input_path, model_path, force=True, suffix="uncertainty"):
     print(f"INFO - Starting glioma uncertainty prediction for\n\t{input_path :}")
