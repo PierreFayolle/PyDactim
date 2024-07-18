@@ -3,9 +3,17 @@
 
 from setuptools import setup, find_packages
 
+project_urls = {
+  'Documentation' : "https://pydactim.readthedocs.io/en/latest/",
+  'Source' : "https://github.com/PierreFayolle/PyDactim",
+  'Download' : "https://pypi.org/project/PyDactim/#files",
+  'Tracker' : "https://github.com/PierreFayolle/PyDactim/issues"
+}
+
+
 setup(name='pydactim',
       python_requires='>=3.7',
-      version='0.0.28',
+      version='0.0.29',
       packages=find_packages(),
       install_requires=[
         "torchio>=0.18.86",
@@ -33,5 +41,6 @@ setup(name='pydactim',
             'project': ('setup.py', 'pydactim'),
             'source_dir': ('setup.py', 'docs')
         }
-      }
+      },
+      project_urls = project_urls
 )
