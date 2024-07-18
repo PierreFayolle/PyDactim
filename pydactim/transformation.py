@@ -5,12 +5,13 @@ import nibabel as nib
 import numpy as np
 from skimage import morphology
 import matplotlib.pyplot as plt
-from .brain_extraction import run_hd_bet
+# from .brain_extraction import run_hd_bet
 from dipy.segment.tissue import TissueClassifierHMRF
 import itk
 from numba import jit
 import torchio as tio
 import torch
+from models.mpunet import MPUnetPP2CBND
 
 def n4_bias_field_correction(input_path, mask=False, force=True, suffix="corrected"):
     """ Correct the bias field correction.
@@ -689,7 +690,7 @@ def extract_dim(input_path, dim, force=True, suffix=""):
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     return output_path
 
-def prediction_glioma(input_path, model_path, landmark_path, force=True, suffix="predicted"):
+def prediction_glioma(input_path, model_path, landmark_path, force=True, suffix="glioma_predicted"):
     print(f"INFO - Starting glioma prediction for\n\t{input_path :}")
     output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
     if os.path.exists(output_path) and not force:
@@ -741,6 +742,71 @@ def prediction_glioma(input_path, model_path, landmark_path, force=True, suffix=
         nib.save(nib.Nifti1Image(val_outputs.squeeze(), affine), output_path)
     
     output_path = remove_small_object(output_path, 5000, force=True)
+    print(f"INFO - Saving generated image at\n\t{output_path :}")
+    return output_path
+
+def prediction_multiple_sclerosis(input_path, model_path, landmark_path, force=True, suffix="ms_predicted"):
+    print(f"INFO - Starting multiple sclerosis prediction for\n\t{input_path :}")
+    output_path = input_path.replace(".nii.gz", "_" + suffix + ".nii.gz")
+    if os.path.exists(output_path) and not force:
+        print(f"INFO - Multiple sclerosis segmentation already done for\n\t{input_path :}")
+        return output_path
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = MPUnetPP2CBND(1, 1).to(device)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    transform = tio.Compose([
+        tio.ToCanonical(),
+        tio.Resample(1),
+        # tio.CopyAffine('image'),
+        tio.CropOrPad((192, 192, 224)),
+        tio.HistogramStandardization({"image": landmark_path}),
+        tio.ZNormalization(masking_method=tio.ZNormalization.mean),
+    ])
+
+    subject = tio.SubjectsDataset([ tio.Subject( image = tio.ScalarImage(input_path) )],  transform=transform )[0]
+
+    patch_overlap = 16
+    grid_sampler = tio.inference.GridSampler(
+        subject,
+        64,
+        patch_overlap
+    )
+
+    patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=16)
+    aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode="average")
+
+    with torch.no_grad():
+        for patches_batch in patch_loader:
+            inputs = patches_batch['image'][tio.DATA].to(device)
+            locations = patches_batch[tio.LOCATION]
+            batch_pred = model(inputs)
+            aggregator.add_batch(batch_pred, locations)
+    output = aggregator.get_output_tensor()
+    y_pred = output[0].numpy().reshape(subject.image.shape)
+
+    val_inputs  = subject.image.numpy().squeeze()
+    # val_outputs = torch.argmax(val_outputs, dim=1).detach().cpu().numpy()[0].astype(float)
+    val_outputs = y_pred.squeeze()
+
+    affine = nib.load(input_path).affine
+
+    nib.save(
+        nib.Nifti1Image(val_inputs, affine), 
+        input_path.replace(".nii", "_input.nii")
+    )
+
+    val_outputs[val_outputs <= 0.01] = 0
+    val_outputs[val_outputs > 0.01] = 1
+    output_path = input_path.replace(".nii", "_predicted.nii")
+    nib.save(
+        nib.Nifti1Image(val_outputs, affine), 
+        output_path
+    )
+
     print(f"INFO - Saving generated image at\n\t{output_path :}")
     return output_path
 
@@ -864,3 +930,10 @@ def uncertainty_prediction_glioma(input_path, model_path, force=True, suffix="un
     
     print(f"INFO - Saving generated image at\n\t{val_outputs_path :}")
     return val_outputs_path
+
+if __name__ == "__main__":
+    landmark_path = r"E:\SEP_IA\results_7T\final\landmarks.npy"
+    model_path = r"E:\SEP_IA\results_7T\final\patches_epoch_298.pth"
+    input_path = r"E:\SEP_IA\data\sub-001\ses-01\anat\sub-001_ses-01_FLAIR.nii.gz"
+
+    prediction_multiple_sclerosis(input_path, model_path, landmark_path)

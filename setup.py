@@ -13,7 +13,7 @@ project_urls = {
 
 setup(name='pydactim',
       python_requires='>=3.7',
-      version='0.0.29',
+      version='1.0.0',
       packages=find_packages(),
       install_requires=[
         "torchio>=0.18.86",

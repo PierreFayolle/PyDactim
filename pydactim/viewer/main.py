@@ -991,6 +991,12 @@ class NiftiViewer(QMainWindow):
                 self.load_sequence(new_path)
                 self.nifti_found.append(new_path)
                 self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
+        elif args[0] == "Multiple Sclerosis":
+            new_path = prediction_multiple_sclerosis(args[1], model_path=args[2], landmark_path=args[3], force=args[4])
+            if new_path not in self.nifti_found:
+                self.load_sequence(new_path)
+                self.nifti_found.append(new_path)
+                self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(self.nifti_found)} images loaded:</h2>")
 
     def closeEvent(self, event):
         for window in self.dynamic_windows:
@@ -1296,6 +1302,37 @@ class TransformsGUI(QWidget):
 
             path = settings.value("ai_model_paths/glioma", "")
             if path is not None: self.set_ai_dir(path)
+            else: "C:\\"
+
+            layout.addWidget(title)
+            layout.addWidget(dialog)
+            layout.addWidget(self.model)
+            layout.addWidget(self.extra)
+
+            force = QCheckBox("Force")
+            layout.addWidget(force)
+
+            button = QPushButton("Run Function", self)
+            button.clicked.connect(lambda: self.launch_transform(transform, combo_box.currentText(), self.model.text(), self.extra.text(), force.isChecked()))
+            layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        elif transform == "Multiple sclerosis":
+            title = QLabel("Path for the input T2-FLAIR")
+            combo_box = QComboBox(self)
+            combo_box.addItems(path)
+            combo_box.setCurrentText(selected_path)
+            layout.addWidget(title)
+            layout.addWidget(combo_box)
+
+            title = QLabel("Model path (including landmarks)")
+            dialog = QPushButton("Browse")
+        
+            dialog.clicked.connect(self.get_ai_dir)
+            self.model = QLineEdit(self)
+            self.extra = QLineEdit(self)
+
+            path = settings.value("ai_model_paths/ms", "")
+            if path is not None and len(path) > 0: self.set_ai_dir(path)
             else: "C:\\"
 
             layout.addWidget(title)
