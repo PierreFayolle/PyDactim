@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pydactim"
-version = "0.0.26"
+version = "0.0.27"
 authors = [
   { name="Pierre FAYOLLE", email="pierre.fayolle@univ-poitiers.fr" },
 ]
@@ -13,3 +13,8 @@ readme = "README.md"
 requires-python = ">=3.7"
 
 
+[project.urls]
+documentation = "https://pydactim.readthedocs.io/en/latest/"
+source = "https://github.com/PierreFayolle/PyDactim"
+download = "https://pypi.org/project/PyDactim/#files"
+tracker = "https://github.com/PierreFayolle/PyDactim/issues"
