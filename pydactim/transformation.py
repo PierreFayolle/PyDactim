@@ -5,7 +5,7 @@ import nibabel as nib
 import numpy as np
 from skimage import morphology
 import matplotlib.pyplot as plt
-# from .brain_extraction import run_hd_bet
+from .brain_extraction import run_hd_bet
 from dipy.segment.tissue import TissueClassifierHMRF
 import itk
 from numba import jit
