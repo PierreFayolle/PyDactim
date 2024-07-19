@@ -10,10 +10,18 @@ project_urls = {
   'Tracker' : "https://github.com/PierreFayolle/PyDactim/issues"
 }
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(name='pydactim',
       python_requires='>=3.7',
       version='1.0.6',
+      author="Pierre Fayolle",
+      author_email="fayollepierre86@gmail.com",
+      description="A library to post-process MRI data",
+      long_description=long_description,
+      long_description_content_type="text/markdown", 
+      url="https://github.com/PierreFayolle/PyDactim",
       packages=find_packages(),
       install_requires=[
         "torchio>=0.18.86",
