@@ -5,9 +5,6 @@
 
 PyDactim Documentation
 ======================================
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
 .. raw:: HTML
 
@@ -29,7 +26,14 @@ PyDactim Documentation
 .. .. |Open In Collab| image:: https://colab.research.google.com/assets/colab-badge.svg
 ..    :target: https://colab.research.google.com/github/PierreFayolle/Dactim_MRI/blob/master/tests/transformation.ipynb
 
-   
+.. _index:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting started
+
+   tutorial
+
 Description
 -----------
 
@@ -48,7 +52,7 @@ Installation
 ------------
 
 Requires at least Python 3.7 or above. Also requires `Pytorch <https://github.com/pytorch/pytorch/>`__, `Torchio <https://github.com/fepegar/torchio/>`__, `Numpy <https://github.com/numpy/numpy/>`__, `Nibabel <https://github.com/nipy/nibabel/>`__, `SimpleITK <https://github.com/SimpleITK/SimpleITK/>`__, `Pydicom <https://github.com/pydicom/pydicom/>`__, `Dicom2nifti <https://github.com/icometrix/dicom2nifti/>`__.
-But make sure to manually install PyTorch on your own !
+Make sure to manually install PyTorch on your own !
 
 Can be quickly installed with pip:
 
@@ -56,9 +60,9 @@ Can be quickly installed with pip:
 
    pip install pydactim
 
-.. Indices and tables
-.. ==================
+Indices and tables
+==================
 
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

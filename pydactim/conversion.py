@@ -7,7 +7,7 @@ import time
 import dicom2nifti
 
 def convert_dicom_to_nifti(dicom_dir, output_dir):
-    """ Convert Dicom folder to Nifti format (@author: abrys)
+    """ Convert Dicom folder to NIfTI format (@author: abrys)
 
     Parameters
     ----------
@@ -15,28 +15,28 @@ def convert_dicom_to_nifti(dicom_dir, output_dir):
         Dicom directory to convert
 
     output_dir : str
-        Nifti file suffixe for the new generated image
+        Directory of the NIfTI file
 
     """
     dicom2nifti.convert_directory(dicom_dir, output_dir)
     
 class Dicomize():
-    """Use a NIFTI file and convert it in DICOM using a folder of DICOM as template.
+    """Use a NIfTI file and convert it in DICOM using a folder of DICOM as template.
 
-    The DICOM folder must contains the original DICOM used to create the NIFTI
+    The DICOM folder must contains the original DICOM used to create the NIfTI
     """
     def __init__(self, dicom_dir, final_dir, nifti_path, series_description, comment="", rgb=False):
         """ 
         Parameters
         ----------
         dicom_dir : str
-            The path of the folder of DICOM used to create the NIFTI file to be converted back to DICOM
+            The path of the folder of DICOM used to create the NIfTI file to be converted back to DICOM
 
         final_dir : str
             The path of the directory in which all the DICOM file generated will be saved
 
         nifti_path : str
-            The path of the NIFTI file to be convertede back to DICOM
+            The path of the NIfTI file to be convertede back to DICOM
 
         series_description : str
             The series description of the new generated DICOM
@@ -45,7 +45,7 @@ class Dicomize():
             The comment to write in the DICOM tag Image Comment (0020,4000)
 
         rgb : boolean
-            The color palette of the NIFTI file
+            The color palette of the NIfTI file
 
         """
         self.dicom_dir = dicom_dir
