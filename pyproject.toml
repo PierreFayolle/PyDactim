@@ -18,3 +18,4 @@ documentation = "https://pydactim.readthedocs.io/en/latest/"
 source = "https://github.com/PierreFayolle/PyDactim"
 download = "https://pypi.org/project/PyDactim/#files"
 tracker = "https://github.com/PierreFayolle/PyDactim/issues"
+

@@ -3,6 +3,7 @@
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![PyPI version](https://img.shields.io/pypi/v/pydactim?label=PyPI%20version&logo=python&logoColor=white)](https://pypi.org/project/pydactim/)
 [![Doc](https://img.shields.io/readthedocs/pydactim?label=Docs&logo=Read%20the%20Docs)](https://pydactim.readthedocs.io/en/latest/)
+[![Doc](https://img.shields.io/badge/GitHub-PyDactim-black?logo=github)](https://github.com/PierreFayolle/PyDactim)
 <!-- [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PierreFayolle/PyDactim/blob/master/tests/transformation.ipynb) -->
 
 

@@ -18,6 +18,11 @@ PyDactim Documentation
 
 |PyPI pyversions| |PyPI version fury.io|
 
+
+
+.. |PyPI pyversions| image:: https://img.shields.io/badge/GitHub-PyDactim-black?logo=github
+   :target: https://github.com/PierreFayolle/PyDactim
+
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://pypi.python.org/pypi/pydactim/
 
