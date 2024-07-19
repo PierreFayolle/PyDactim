@@ -16,11 +16,11 @@ PyDactim Documentation
       <img src="_static/Univ-logo.png" width="163px" style="margin-right: 5px">
    </div>
 
-|PyPI pyversions| |PyPI version fury.io|
+|PyPI pyversions| |PyPI version fury.io| |GithHub link|
 
 
 
-.. |PyPI pyversions| image:: https://img.shields.io/badge/GitHub-PyDactim-black?logo=github
+.. |GithHub link| image:: https://img.shields.io/badge/GitHub-PyDactim-black?logo=github
    :target: https://github.com/PierreFayolle/PyDactim
 
 .. |PyPI pyversions| image:: https://img.shields.io/badge/python-3.7-blue.svg
