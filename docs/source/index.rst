@@ -8,12 +8,12 @@ PyDactim Documentation
 
 .. raw:: HTML
 
-   <div style="display: flex; padding-bottom: 20px">
-      <img src="_static/pydactim-logo.png" width="105px" style="margin-right: 10px">
-      <img src="_static/I3M-logo.png" width="105px" style="margin-right: 10px">
-      <img src="_static/LMA-logo.png" width="173px" style="margin-right: 10px">
-      <img src="_static/dactim-logo.png" width="110px" style="margin-right: 10px">
-      <img src="_static/Univ-logo.png" width="163px" style="margin-right: 10px">
+   <div style="padding-bottom: 20px">
+      <img src="_static/pydactim-logo.png" width="120px" style="margin-right: 5px">
+      <img src="_static/I3M-logo.png" width="105px" style="margin-right: 5px">
+      <img src="_static/LMA-logo.png" width="155px" style="margin-right: 5px">
+      <img src="_static/dactim-logo.png" width="110px" style="margin-right: 5px">
+      <img src="_static/Univ-logo.png" width="163px" style="margin-right: 5px">
    </div>
 
 |PyPI pyversions| |PyPI version fury.io|
