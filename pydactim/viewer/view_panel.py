@@ -6,9 +6,9 @@ import pyqtgraph as pg
 import nibabel as nib
 import numpy as np
 
-from custom import CustomLabel
-from utils import is_dsc_param, create_lut, reset_layout, to_sagittal, to_coronal, to_axial, create_4D_grid, to_3D
-from settings import *
+from .custom import CustomLabel
+from .utils import is_dsc_param, create_lut, reset_layout, to_sagittal, to_coronal, to_axial, create_4D_grid, to_3D
+from .settings import *
 from scipy import ndimage
 
 class ViewData():

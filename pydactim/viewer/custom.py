@@ -8,8 +8,8 @@ from scipy.interpolate import interp2d
 import nibabel as nib
 import numpy as np
 
-from utils import is_dsc_param, create_lut
-from settings import *
+from .utils import is_dsc_param, create_lut
+from .settings import *
 import matplotlib.pyplot as plt
 
 class ThumbnailFrame(QFrame):
