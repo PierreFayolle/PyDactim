@@ -9,6 +9,7 @@ PyDactim Documentation
 .. raw:: HTML
 
    <div style="display: flex; padding-bottom: 20px">
+      <img src="_static/pydactim-logo.png" width="105px" style="margin-right: 10px">
       <img src="_static/I3M-logo.png" width="105px" style="margin-right: 10px">
       <img src="_static/LMA-logo.png" width="173px" style="margin-right: 10px">
       <img src="_static/dactim-logo.png" width="110px" style="margin-right: 10px">
