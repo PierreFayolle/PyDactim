@@ -746,27 +746,27 @@ class NiftiViewer(QMainWindow):
         if self.view_widget.state != "3D":
             if self.view_widget.state == "Axial":
                 screenshot = screen.grabWindow(self.view_widget.axial_label.winId())
-                name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_axial.png"
+                name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_axial.png"
             elif self.view_widget.state == "Coronal":
                 screenshot = screen.grabWindow(self.view_widget.coronal_label.winId())
-                name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_coronal.png"
+                name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_coronal.png"
             elif self.view_widget.state == "Sagittal":
                 screenshot = screen.grabWindow(self.view_widget.sagittal_label.winId())
-                name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_sagittal.png"
+                name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_sagittal.png"
 
             screenshot.save(os.path.join(dir, name), "png")
             print(f"INFO - Successfully screenshot at: {os.path.join(dir, name)}")
         else:
             screenshot = screen.grabWindow(self.view_widget.axial_label.winId())
-            name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_axial.png"
+            name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_axial.png"
             screenshot.save(os.path.join(dir, name), "png")
 
             screenshot = screen.grabWindow(self.view_widget.coronal_label.winId())
-            name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_coronal.png"
+            name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_coronal.png"
             screenshot.save(os.path.join(dir, name), "png")
 
             screenshot = screen.grabWindow(self.view_widget.sagittal_label.winId())
-            name = f"{os.path.basename(self.view_widget.path).replace(".nii", "").replace(".gz", "")}_sagittal.png"
+            name = f"{os.path.basename(self.view_widget.path).replace('.nii', '').replace('.gz', '')}_sagittal.png"
             screenshot.save(os.path.join(dir, name), "png")
         
     def gifshot(self):
