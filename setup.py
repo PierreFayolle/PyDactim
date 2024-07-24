@@ -15,7 +15,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(name='pydactim',
       python_requires='>=3.7',
-      version='1.0.10',
+      version='1.0.11',
       author="Pierre Fayolle",
       author_email="fayollepierre86@gmail.com",
       description="A library to post-process MRI data",

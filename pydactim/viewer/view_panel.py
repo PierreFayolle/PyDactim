@@ -183,7 +183,7 @@ class ViewPanel(QWidget):
             aif = temp[int(y), int(x), z, :]
 
             idx = np.where(np.max(self.data[:,:,z,:], axis=-1) > 1000)
-            mean = np.mean(self.data[idx[0], idx[1], 15, :], axis=0)
+            mean = np.mean(self.data[idx[0], idx[1], z, :], axis=0)
 
             self.plot_aif.clear()
             self.plot_aif.plot(aif, pen=pg.mkPen(color=(255, 0, 0)))

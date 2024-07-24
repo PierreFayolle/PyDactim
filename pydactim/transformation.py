@@ -180,7 +180,7 @@ def resample(*values, suffix="resampled"):
         if type(value) == str and os.path.exists(value):
             paths.append(value)
 
-        elif type(value) == int:
+        elif type(value) == int or type(value) == float:
             transform = tio.Resample(value)
 
     if len(paths) > 0:
