@@ -1,7 +1,7 @@
 import os
 import pydicom
 import shutil
-from pydactim.anonymization import anonymize_dicom
+from .anonymization import anonymize_dicom
 
 def sort_dicom(dicom_dir, output_dir="", anonymize=False):
     """ Sort a Dicom dir by exam, patient, session and then sequence

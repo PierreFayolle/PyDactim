@@ -3,9 +3,9 @@ import os
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
-from PySide6.QtWidgets import QFrame, QHeaderView, QApplication, QPushButton, QSlider, QDialog, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QFileDialog, QMenu
-from PySide6.QtGui import QImage, QPixmap, QAction, QGuiApplication, QIcon, QDragEnterEvent, QDropEvent
-from PySide6.QtCore import Qt, QEvent, QRect, QSize, QSettings, QUrl, QThreadPool, QRunnable, Signal, Slot, QObject, QEventLoop, QWaitCondition, QMutex
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 import pyqtgraph as pg
 import matplotlib.pyplot as plt
 import glob
@@ -14,13 +14,10 @@ import imageio
 import tempfile
 import threading
 
-from pydactim.transformation import (n4_bias_field_correction,
-    registration, apply_transformation, resample, histogram_matching, 
-    apply_mask, substract, susan, normalize, crop, apply_crop, copy_affine, skull_stripping, 
-    remove_small_object, tissue_classifier, add_tissue_class, prediction_glioma, prediction_multiple_sclerosis, uncertainty_prediction_glioma)
+from ..transformation import *
 
-from pydactim.sorting import sort_dicom
-from pydactim.conversion import convert_dicom_to_nifti
+from ..sorting import sort_dicom
+from ..conversion import convert_dicom_to_nifti
 from .custom import ThumbnailFrame, ScrollArea, ComboBox, AnimatedToggle
 from .view_panel import ViewPanel
 from .utils import create_thumbnail, get_darkModePalette, reset_layout

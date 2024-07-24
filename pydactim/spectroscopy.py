@@ -4,7 +4,7 @@ import numpy as np
 import pydicom
 import math
 
-from pydactim.utils import load_dicom
+from .utils import load_dicom
 
 def generate_mask(svs_path, nii_path, force=True, output_suffixe="mask"):
     """ Create a 3D mask of the spectroscopy volume of interest

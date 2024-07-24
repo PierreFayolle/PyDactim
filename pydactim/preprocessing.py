@@ -1,5 +1,7 @@
-import pydactim as pyd
 import os
+
+from .utils import *
+from .transformation import *
 
 global MODEL_PATH, FORCE
 
@@ -22,7 +24,7 @@ def get_force():
     global FORCE
     return FORCE
 
-@pyd.timed
+@timed
 def preproc(sub_path, ses="ses-01", ref="T1w", normalize=False, keep_all=True):
     # Checking errors
     sub = os.path.basename(sub_path)
@@ -53,7 +55,7 @@ def preproc(sub_path, ses="ses-01", ref="T1w", normalize=False, keep_all=True):
     for seq in os.listdir(anat_path):
         seq_path = os.path.join(anat_path, seq)
         # Check if the file is a nii.gz
-        if seq_path.endswith("nii.gz") and seq_path != ref_path and pyd.is_native(seq_path):
+        if seq_path.endswith("nii.gz") and seq_path != ref_path and is_native(seq_path):
             print(f"INFO - Nifti file found: {seq_path}")
             # Starting preproc for the current sequence path
             seq_path = other_preproc(seq_path, ref_corrected, ref_brain_mask, ref_crop, normalize)
@@ -63,7 +65,7 @@ def preproc(sub_path, ses="ses-01", ref="T1w", normalize=False, keep_all=True):
     for seq in os.listdir(dwi_path):
         seq_path = os.path.join(dwi_path, seq)
         # Check if the file is a nii.gz
-        if seq_path.endswith("nii.gz") and pyd.is_native(seq_path) and pyd.utils.is_useful(seq_path):
+        if seq_path.endswith("nii.gz") and is_native(seq_path) and is_useful(seq_path):
             print(f"INFO - Nifti file found: {seq_path}")
             # Starting preproc for the current sequence path
             seq_path = other_preproc(seq_path, ref_corrected, ref_brain_mask, ref_crop, normalize)
@@ -73,31 +75,31 @@ def preproc(sub_path, ses="ses-01", ref="T1w", normalize=False, keep_all=True):
     for seq in os.listdir(perf_path):
         seq_path = os.path.join(perf_path, seq)
         # Check if the file is a nii.gz
-        if seq_path.endswith("nii.gz") and pyd.is_native(seq_path) and pyd.utils.is_useful(seq_path):
+        if seq_path.endswith("nii.gz") and is_native(seq_path) and is_useful(seq_path):
             print(f"INFO - Nifti file found: {seq_path}")
             # Starting preproc for the current sequence path
             seq_path = other_preproc(seq_path, ref_corrected, ref_brain_mask, ref_crop, normalize)
 
-@pyd.timed
+@timed
 def ref_preproc(ref_path, normalize):
     # crop => resample => n4 bias field correction => skull stripping => crop
-    ref_path_cropped, crop_idx_1 = pyd.crop(ref_path, force=get_force())
-    ref_path_resampled = pyd.resample(ref_path_cropped, 1)[0]
-    ref_path_corrected, ref_path_corrected_mask = pyd.n4_bias_field_correction(ref_path_resampled, mask=True, force=get_force())
-    ref_path_brain, ref_path_brain_mask = pyd.skull_stripping(ref_path_corrected, get_model(), mask=True, force=get_force())
-    ref_path_brain_cropped, crop_idx_2 = pyd.crop(ref_path_brain, force=get_force())
-    ref_path_brain_mask_cropped = pyd.apply_crop(ref_path_brain_mask, crop_idx_2, force=get_force())
-    if normalize: ref_path_normalized = pyd.normalize(ref_path_brain_cropped, force=get_force())
+    ref_path_cropped, crop_idx_1 = crop(ref_path, force=get_force())
+    ref_path_resampled = resample(ref_path_cropped, 1)[0]
+    ref_path_corrected, ref_path_corrected_mask = n4_bias_field_correction(ref_path_resampled, mask=True, force=get_force())
+    ref_path_brain, ref_path_brain_mask = skull_stripping(ref_path_corrected, get_model(), mask=True, force=get_force())
+    ref_path_brain_cropped, crop_idx_2 = crop(ref_path_brain, force=get_force())
+    ref_path_brain_mask_cropped = apply_crop(ref_path_brain_mask, crop_idx_2, force=get_force())
+    if normalize: ref_path_normalized = normalize(ref_path_brain_cropped, force=get_force())
     return ref_path_corrected, ref_path_brain_mask, crop_idx_2
 
-@pyd.timed
+@timed
 def other_preproc(seq_path, ref_brain, ref_brain_mask, ref_crop, normalize):
     # registration => apply brain mask => apply crop => n4 bias field correction
-    seq_path_registered, matrix_path = pyd.registration(ref_brain, seq_path, force=get_force())
-    seq_path_brain = pyd.apply_mask(seq_path_registered, ref_brain_mask, suffix="brain", force=get_force())
-    seq_path_cropped = pyd.apply_crop(seq_path_brain, crop=ref_crop, force=get_force())
-    seq_path_corrected, seq_path_corrected_mask = pyd.n4_bias_field_correction(seq_path_cropped, mask=True, force=get_force())
-    if normalize: seq_path_normalized = pyd.normalize(seq_path_corrected, force=get_force())
+    seq_path_registered, matrix_path = registration(ref_brain, seq_path, force=get_force())
+    seq_path_brain = apply_mask(seq_path_registered, ref_brain_mask, suffix="brain", force=get_force())
+    seq_path_cropped = apply_crop(seq_path_brain, crop=ref_crop, force=get_force())
+    seq_path_corrected, seq_path_corrected_mask = n4_bias_field_correction(seq_path_cropped, mask=True, force=get_force())
+    if normalize: seq_path_normalized = normalize(seq_path_corrected, force=get_force())
 
 # def prediction_glioma(input_path, model_path, landmarks_path, force=True, suffix="predicted"):
 #     print(f"INFO - Starting glioma prediction for\n\t{input_path :}")
@@ -154,7 +156,7 @@ def other_preproc(seq_path, ref_brain, ref_brain_mask, ref_crop, normalize):
 
 #         nib.save(nib.Nifti1Image(val_outputs.squeeze(), affine), output_path)
     
-#     output_path = pyd.remove_small_object(output_path, 5000, force=True)
+#     output_path = remove_small_object(output_path, 5000, force=True)
 #     print(f"INFO - Saving generated image at\n\t{output_path :}")
 #     return output_path
 
@@ -289,72 +291,72 @@ class Pipeline:
         self.pve = None
 
     def susan(self, size):
-        self.data = pyd.susan(self.data, size)
+        self.data = susan(self.data, size)
 
     def remove_small_object(self, threshold):
-        self.data = pyd.remove_small_object(self.data, threshold)
+        self.data = remove_small_object(self.data, threshold)
 
     def tissue_classifier(self):
-        self.data, self.pve = pyd.tissue_classifier(self.data, force=False)
+        self.data, self.pve = tissue_classifier(self.data, force=False)
 
     def skull_stripping(self, mask, model):
         if not os.path.isdir(model): 
             raise NotADirectoryError(f"ERROR - The following model path is not a directory: {model}")
         
         if mask:
-            self.data, self.mask = pyd.skull_stripping(self.data, model, mask, force=False)
+            self.data, self.mask = skull_stripping(self.data, model, mask, force=False)
         else:
-            self.data = pyd.skull_stripping(self.data, model, mask, force=False)
+            self.data = skull_stripping(self.data, model, mask, force=False)
 
     def registration(self, ref):
-        self.data, self.matrix = pyd.registration(ref, self.data, force=False)
+        self.data, self.matrix = registration(ref, self.data, force=False)
 
     def apply_transformation(self, ref, matrix):
         if not os.path.exists(ref): 
             raise FileNotFoundError(f"ERROR - The following reference file is not existing: {ref}")
         if not os.path.exists(matrix): 
             raise FileNotFoundError(f"ERROR - The following matrix file is not existing: {matrix}")
-        self.data = pyd.apply_transformation(ref, self.data, matrix)
+        self.data = apply_transformation(ref, self.data, matrix)
 
     def crop(self):
-        self.data, self.cropped_idx = pyd.crop(self.data)
+        self.data, self.cropped_idx = crop(self.data)
         print(f"DEBUG - Cropping at {self.cropped_idx[0]}, {self.cropped_idx[1]}, {self.cropped_idx[2]}, {self.cropped_idx[3]}, {self.cropped_idx[4]}, {self.cropped_idx[5]}")
 
     def resample(self, obj):
-        self.data = pyd.resample(self.data, obj)[0]
+        self.data = resample(self.data, obj)[0]
 
     def apply_crop(self, crop=None):
         if self.cropped_idx is None:
             if crop is not None:
-                self.data = pyd.apply_crop(self.data, crop)
+                self.data = apply_crop(self.data, crop)
             else:
                 raise ValueError("ERROR - If no previous crop done, you need to have a crop argument")
         else:
-            self.data = pyd.apply_crop(self.data, self.cropped_idx)
+            self.data = apply_crop(self.data, self.cropped_idx)
 
     def apply_mask(self, mask):
-        self.data = pyd.apply_mask(self.data, mask)
+        self.data = apply_mask(self.data, mask)
 
     def normalize(self):
-        self.data = pyd.normalize(self.data)
+        self.data = normalize(self.data)
 
     def n4_bias_field_correction(self, mask):
         if mask:
-            self.data, self.bias = pyd.n4_bias_field_correction(self.data, mask, force=False)
+            self.data, self.bias = n4_bias_field_correction(self.data, mask, force=False)
         else:
-            self.data = pyd.n4_bias_field_correction(self.data, mask, force=False)
+            self.data = n4_bias_field_correction(self.data, mask, force=False)
 
     def prediction_glioma(self, model, landmarks):
-        self.pred = pyd.prediction_glioma(self.data, model, landmarks)
+        self.pred = prediction_glioma(self.data, model, landmarks)
 
     def add_tissue_class(self, ref, num):
-        self.data = pyd.add_tissue_class(ref, self.pred, num)
+        self.data = add_tissue_class(ref, self.pred, num)
 
     def susan(self):
-        self.data = pyd.susan(self.data, force=False)
+        self.data = susan(self.data, force=False)
 
     def extract_dim(self, dim):
-        self.data = pyd.extract_dim(self.data, dim)
+        self.data = extract_dim(self.data, dim)
 
     def change_data(self, new_data):
         self.data = new_data

@@ -3,7 +3,7 @@ import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from pydactim.utils import get_name_of_path
+from .utils import get_name_of_path
 
 def plot_histo(input_path):
     # Load your MRI image data into a numpy array
