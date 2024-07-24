@@ -453,10 +453,10 @@ def segmentation_nifti(segmentation, dct, order=1):
                      bbox[2][0]:bbox[2][1]] = segmentation
     else:
         seg_old_size = segmentation
-    if np.any(np.array(seg_old_size) != np.array(dct['size'])[[2, 1, 0]]):
-        seg_old_spacing = resize_segmentation(seg_old_size, np.array(dct['size'])[[2, 1, 0]], order=order)
-    else:
-        seg_old_spacing = seg_old_size
+    # if np.any(np.array(seg_old_size) != np.array(dct['size'])[[2, 1, 0]]):
+    seg_old_spacing = resize_segmentation(seg_old_size, np.array(dct['size'])[[2, 1, 0]], order=order)
+    # else:
+        # seg_old_spacing = seg_old_size
     seg_resized_itk = sitk.GetImageFromArray(seg_old_spacing.astype(np.int32))
     seg_resized_itk.SetSpacing(np.array(dct['spacing'])[[0, 1, 2]])
     seg_resized_itk.SetOrigin(dct['origin'])
