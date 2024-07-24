@@ -4,14 +4,15 @@ import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 from PySide6.QtWidgets import QFrame, QHeaderView, QApplication, QPushButton, QSlider, QDialog, QComboBox, QToolButton, QLineEdit, QLabel, QMainWindow, QCheckBox, QScrollArea, QStackedLayout, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QFileDialog, QMenu
-from PySide6.QtGui import QImage, QPixmap, QAction, QGuiApplication, QIcon
-from PySide6.QtCore import Qt, QEvent, QRect, QSize, QSettings
+from PySide6.QtGui import QImage, QPixmap, QAction, QGuiApplication, QIcon, QDragEnterEvent, QDropEvent
+from PySide6.QtCore import Qt, QEvent, QRect, QSize, QSettings, QUrl, QThreadPool, QRunnable, Signal, Slot, QObject, QEventLoop, QWaitCondition, QMutex
 import pyqtgraph as pg
 import matplotlib.pyplot as plt
 import glob
 from io import StringIO
 import imageio
 import tempfile
+import threading
 
 from pydactim.transformation import (n4_bias_field_correction,
     registration, apply_transformation, resample, histogram_matching, 
@@ -106,6 +107,13 @@ class NiftiViewer(QMainWindow):
         # self.init_all()
         # self.open_volume()
         self.dynamic_windows = []
+
+        settings = self.init_config()
+        last_path = settings.value(f"recent_paths/recent_path_1", "")
+        print(f"{last_path = }")
+        if os.path.exists(last_path):
+            if os.path.isdir(last_path): self.open_volume(last_path)
+            else: self.add_file(last_path)
 
     def init_all(self):
         self.filename = self.nifti_found[0]
@@ -592,45 +600,52 @@ class NiftiViewer(QMainWindow):
         self.thumbnail_title = QLabel()
         self.thumbnail_title.setText(f"<h2 style='margin-left: 10px'>{len(paths)} images loaded:</h2>")
         self.thumbnail_layout.addWidget(self.thumbnail_title)
-        for path in paths:
-            self.load_sequence(path)
+
+        if len(paths) > 1:
+            data_loader = DataLoader(self.thumbnail_layout, self.replace_data, self.create_overlay)
+            for path in paths:
+                print(path)
+                data_loader.load_sequence(path)
+        else:
+            self.load_sequence(paths[0])
 
         self.thumbnail_widget.setLayout(self.thumbnail_layout)
         self.scroll_area.setWidget(self.thumbnail_widget)
+
         print("INFO - UI fully created")
 
     def load_sequence(self, path):
-            print(f"INFO - Found:\t{path}")
-            frame = ThumbnailFrame(path, self.replace_data, self.create_overlay)
-            label_image = QLabel()
+        print(f"INFO - Found:\t{path}")
+        frame = ThumbnailFrame(path, self.replace_data, self.create_overlay)
+        label_image = QLabel()
 
-            thumbnail, shape, pixdim = create_thumbnail(path)
-            thumbnail = (thumbnail - thumbnail.min()) / (thumbnail.max() - thumbnail.min()) * 255
-            thumbnail = thumbnail.astype('uint8')
-            image = QImage(thumbnail.data, thumbnail.shape[1], thumbnail.shape[0], thumbnail.shape[1], QImage.Format_Grayscale8)
+        thumbnail, shape, pixdim = create_thumbnail(path)
+        thumbnail = (thumbnail - thumbnail.min()) / (thumbnail.max() - thumbnail.min()) * 255
+        thumbnail = thumbnail.astype('uint8')
+        image = QImage(thumbnail.data, thumbnail.shape[1], thumbnail.shape[0], thumbnail.shape[1], QImage.Format.Format_Grayscale8)
 
-            pixmap = QPixmap.fromImage(image)
-            pixel_width, pixel_height, _ = pixdim
-            scaled_width = int(pixmap.width() * pixel_width)
-            scaled_height = int(pixmap.height() * pixel_height)
-            pixmap = pixmap.scaled(scaled_width, scaled_height)
-            pixmap = pixmap.scaledToWidth(THUMBNAIL_WIDTH, Qt.SmoothTransformation)
-            label_image.setPixmap(pixmap)
+        pixmap = QPixmap.fromImage(image)
+        pixel_width, pixel_height, _ = pixdim
+        scaled_width = int(pixmap.width() * pixel_width)
+        scaled_height = int(pixmap.height() * pixel_height)
+        pixmap = pixmap.scaled(scaled_width, scaled_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        pixmap = pixmap.scaledToWidth(THUMBNAIL_WIDTH, Qt.TransformationMode.SmoothTransformation)
+        label_image.setPixmap(pixmap)
 
-            label_info = QLabel()
-            path = os.path.basename(path).split(".nii")[0]
-            if len(path) > 32: path = path[:32] + "..."
-            pixdim = [round(pixdim[0], 2), round(pixdim[1], 2), round(pixdim[2], 2)]
-            label_info.setText(f"{path}<br>Shape: {shape}<br>Pixdim: {pixdim}<hr style='background-color: {LIGHT_BORDER_COLOR}'>")
+        label_info = QLabel()
+        path = os.path.basename(path).split(".nii")[0]
+        if len(path) > 32: path = path[:32] + "..."
+        pixdim = [round(pixdim[0], 2), round(pixdim[1], 2), round(pixdim[2], 2)]
+        label_info.setText(f"{path}<br>Shape: {shape}<br>Pixdim: {pixdim}<hr style='background-color: {LIGHT_BORDER_COLOR}'>")
 
-            label_info.setStyleSheet("border: 0px solid #000000;")
-            label_image.setStyleSheet("border: 0px solid #000000;")
+        label_info.setStyleSheet("border: 0px solid #000000;")
+        label_image.setStyleSheet("border: 0px solid #000000;")
 
-            temp_layout = QVBoxLayout(frame)
-            temp_layout.addWidget(label_image)
-            temp_layout.addWidget(label_info)
+        temp_layout = QVBoxLayout(frame)
+        temp_layout.addWidget(label_image)
+        temp_layout.addWidget(label_info)
 
-            self.thumbnail_layout.addWidget(frame)
+        self.thumbnail_layout.addWidget(frame)
 
     def replace_data(self, path):
         self.view_widget.init(path)
@@ -896,7 +911,13 @@ class NiftiViewer(QMainWindow):
             widget.update_image()
 
     def transforms(self, transform):
-        new_window = TransformsGUI(self.nifti_found, self.view_widget.path, transform, self.run_transform, self.init_config)
+        if "DICOM" in transform: 
+            path = None
+            widget_path = None
+        else: 
+            path = self.nifti_found
+            widget_path = self.view_widget.path
+        new_window = TransformsGUI(path, widget_path, transform, self.run_transform, self.init_config)
         new_window.show()
         self.dynamic_windows.append(new_window)
 
@@ -1014,6 +1035,105 @@ class NiftiViewer(QMainWindow):
 
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                self.handleFileDrop(file_path)
+    
+    def handleFileDrop(self, path):
+        # Call your function here with the path
+        print(f"Dropped: {path}")
+        if os.path.isdir(path):
+            self.open_volume(path=path)
+        else:
+            self.add_file(path=path)
+
+class WorkerSignals(QObject):
+    finished = Signal()
+    result = Signal(object)
+
+class LoadSequenceWorker(QRunnable):
+    def __init__(self, path, callback):
+        super().__init__()
+        self.path = path
+        self.callback = callback
+        self.signals = WorkerSignals()
+
+    @Slot()
+    def run(self):
+        try:
+            thumbnail, shape, pixdim = create_thumbnail(self.path)
+            thumbnail = (thumbnail - thumbnail.min()) / (thumbnail.max() - thumbnail.min()) * 255
+            thumbnail = thumbnail.astype('uint8')
+            self.signals.result.emit((self.path, thumbnail, shape, pixdim))
+        except Exception as e:
+            print(f"Error in worker for {self.path}: {e}")
+        finally:
+            self.signals.finished.emit()
+
+class DataLoader(QObject):
+    def __init__(self, thumbnail_layout, replace_data, create_overlay):
+        super().__init__()
+        self.thumbnail_layout = thumbnail_layout
+        self.threadpool = QThreadPool()
+        self.active_workers = 0
+        self.finished_workers = 0
+        self.replace_data = replace_data
+        self.create_overlay = create_overlay
+
+    def load_sequence(self, path):
+        worker = LoadSequenceWorker(path, self.process_thumbnail)
+        worker.signals.result.connect(self.process_thumbnail)
+        worker.signals.finished.connect(self.worker_finished)
+        self.active_workers += 1
+        self.threadpool.start(worker)
+        
+    @Slot(object)
+    def process_thumbnail(self, result):
+        try:
+            path, thumbnail, shape, pixdim = result
+            frame = ThumbnailFrame(path, self.replace_data, self.create_overlay)
+            label_image = QLabel()
+
+            image = QImage(thumbnail.data, thumbnail.shape[1], thumbnail.shape[0], thumbnail.shape[1], QImage.Format.Format_Grayscale8)
+            pixmap = QPixmap.fromImage(image)
+            pixel_width, pixel_height, _ = pixdim
+            scaled_width = int(pixmap.width() * pixel_width)
+            scaled_height = int(pixmap.height() * pixel_height)
+            pixmap = pixmap.scaled(scaled_width, scaled_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pixmap = pixmap.scaledToWidth(THUMBNAIL_WIDTH, Qt.TransformationMode.SmoothTransformation)
+            label_image.setPixmap(pixmap)
+
+            label_info = QLabel()
+            path = os.path.basename(path).split(".nii")[0]
+            if len(path) > 32: path = path[:32] + "..."
+            pixdim = [round(pixdim[0], 2), round(pixdim[1], 2), round(pixdim[2], 2)]
+            label_info.setText(f"{path}<br>Shape: {shape}<br>Pixdim: {pixdim}<hr style='background-color: {LIGHT_BORDER_COLOR}'>")
+
+            label_info.setStyleSheet("border: 0px solid #000000;")
+            label_image.setStyleSheet("border: 0px solid #000000;")
+
+            temp_layout = QVBoxLayout(frame)
+            temp_layout.addWidget(label_image)
+            temp_layout.addWidget(label_info)
+
+            self.thumbnail_layout.addWidget(frame)
+        except Exception as e:
+            print(f"Error processing thumbnail: {e}")
+
+    @Slot()
+    def worker_finished(self):
+        self.finished_workers += 1
+        if self.finished_workers + 1 == self.active_workers:
+            self.threadpool.waitForDone()
 
 class TransformsGUI(QWidget):
     def __init__(self, path, selected_path, transform, run_transform, conf):

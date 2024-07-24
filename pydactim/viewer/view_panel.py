@@ -66,7 +66,7 @@ class ViewPanel(QWidget):
 
     def load_data(self, path):
         self.img = nib.load(path)
-        self.data = self.img.get_fdata().astype(np.float32)
+        self.data = np.array(self.img.dataobj, dtype=np.float32)
         self.shape = self.img.shape
         self.pixdim = self.img.header["pixdim"][1:4]
 

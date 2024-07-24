@@ -10,7 +10,6 @@ def is_dsc_param(path):
             return True
         return False
 
-@njit
 def to_sagittal(data, pixdim, path):
     sdata = np.transpose(data, (1,2,0))
     spixdim = [pixdim[1], pixdim[2], pixdim[0]]
@@ -19,7 +18,6 @@ def to_sagittal(data, pixdim, path):
     s_slice = sdata.shape[2] // 2
     return sdata, s_slice, spixdim, sdata.shape[2]
 
-@njit
 def to_coronal(data, pixdim, path):
     cdata = np.transpose(data, (0,2,1))
     cpixdim = [pixdim[0], pixdim[2], pixdim[1]]
@@ -33,7 +31,6 @@ def to_coronal(data, pixdim, path):
     c_slice = cdata.shape[2] // 2
     return cdata, c_slice, cpixdim, cdata.shape[2]
 
-@njit
 def to_axial(data, pixdim, path):
     adata = np.rot90(data)
     apixdim = list(pixdim)
@@ -97,7 +94,7 @@ def create_lut(lut):
 
 def create_thumbnail(path):
     img = nib.load(path)
-    data = img.get_fdata()
+    data = np.array(img.dataobj, dtype=np.float32)
 
     def thumbnail(data):
         if len(data.shape) == 4:
